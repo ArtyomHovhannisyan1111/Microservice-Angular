@@ -43,9 +43,15 @@ import { AuthService } from '../../../core/services/auth.service';
 
             <!-- Password -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                Пароль
-              </label>
+              <div class="flex items-center justify-between mb-1.5">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Пароль
+                </label>
+                <a routerLink="/auth/forgot-password"
+                   class="text-xs text-primary-600 dark:text-primary-400 hover:underline">
+                  Забыли пароль?
+                </a>
+              </div>
               <div class="relative">
                 <input formControlName="password" [type]="showPassword() ? 'text' : 'password'"
                        placeholder="Минимум 6 символов"

@@ -5,6 +5,7 @@ import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { CartService } from '../../../core/services/cart.service';
 import { OrderService } from '../../../core/services/order.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { OrderItem } from '../../../core/models/order.model';
 import { ImageUrlPipe, IMAGE_PLACEHOLDER } from '../../../core/pipes/image-url.pipe';
 
@@ -153,6 +154,7 @@ export class CheckoutComponent {
   private fb           = inject(FormBuilder);
   readonly cart        = inject(CartService);
   private orderService = inject(OrderService);
+  private auth         = inject(AuthService);
   private router       = inject(Router);
 
   readonly loading = signal(false);
@@ -187,6 +189,7 @@ export class CheckoutComponent {
         this.orderService.createOrder({
           items,
           total: this.cart.total(),
+          userEmail: this.auth.user()?.email,
           shippingAddress: {
             fullName: addr.fullName!,
             address:  addr.address!,

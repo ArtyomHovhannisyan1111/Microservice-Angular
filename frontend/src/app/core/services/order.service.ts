@@ -23,7 +23,8 @@ export class OrderService {
           total: req.total,
           status: 'pending',
           createdAt: new Date(),
-          shippingAddress: req.shippingAddress
+          shippingAddress: req.shippingAddress,
+          userEmail: req.userEmail
         };
         return of(mock);
       }),
@@ -57,6 +58,18 @@ export class OrderService {
     );
   }
 
+  /** DELETE /api/orders/{id} — удаляет заказ; при недоступном бэкенде — mock-успех */
+  deleteOrder(orderId: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/api/orders/${orderId}`).pipe(
+      catchError(() => of(undefined)),
+      tap(() => {
+        const next = this.ordersSubject.value.filter(o => o.id !== orderId);
+        this.ordersSubject.next(next);
+        this.saveLocalOrders(next);
+      })
+    );
+  }
+
   updateOrderStatus(orderId: string, status: OrderStatus): Observable<Order> {
     return this.http.patch<Order>(`${this.baseUrl}/api/v1/orders/${orderId}/status`, { status }).pipe(
       catchError(() => {
@@ -70,6 +83,27 @@ export class OrderService {
     );
   }
 
+  /** POST http://localhost:8084/api/orders/{id}/confirm
+   *  Order Service через Feign Client вызывает Notification Service → email пользователю */
+  confirmOrder(orderId: string, userEmail: string, userName?: string): Observable<Order> {
+    return this.http.post<Order>(
+      `http://localhost:8084/api/orders/${orderId}/confirm`,
+      { userEmail, userName }
+    ).pipe(
+      catchError(() => {
+        const order = this.ordersSubject.value.find(o => o.id === orderId);
+        return of({ ...(order as Order), status: 'confirmed' as OrderStatus });
+      }),
+      tap(() => {
+        const next = this.ordersSubject.value.map(o =>
+          o.id === orderId ? { ...o, status: 'confirmed' as OrderStatus } : o
+        );
+        this.ordersSubject.next(next);
+        this.saveLocalOrders(next);
+      })
+    );
+  }
+
   // ─── Helpers ─────────────────────────────────────────────────────────────────
 
   getStatusLabel(status: OrderStatus): string {
@@ -78,9 +112,10 @@ export class OrderService {
       processing: 'Обрабатывается',
       shipped:    'Отправлен',
       delivered:  'Доставлен',
-      cancelled:  'Отменён'
+      cancelled:  'Отменён',
+      confirmed:  'Подтверждён'
     };
-    return labels[status];
+    return labels[status] ?? status;
   }
 
   getStatusColor(status: OrderStatus): string {
@@ -89,9 +124,10 @@ export class OrderService {
       processing: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
       shipped:    'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
       delivered:  'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-      cancelled:  'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+      cancelled:  'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+      confirmed:  'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200'
     };
-    return colors[status];
+    return colors[status] ?? '';
   }
 
   private loadLocalOrders(): Order[] {

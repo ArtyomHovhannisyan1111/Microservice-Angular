@@ -1,4 +1,4 @@
-export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'confirmed';
 
 export interface ShippingAddress {
   fullName: string;
@@ -18,6 +18,8 @@ export interface OrderItem {
 
 export interface Order {
   id: string;
+  /** Email пользователя — заполняется при создании заказа для отправки уведомлений */
+  userEmail?: string;
   items: OrderItem[];
   total: number;
   status: OrderStatus;
@@ -29,4 +31,5 @@ export interface CreateOrderRequest {
   items: OrderItem[];
   shippingAddress: ShippingAddress;
   total: number;
+  userEmail?: string;
 }

@@ -1,14 +1,13 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, signal, computed, inject } from '@angular/core';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 import { User, LoginRequest, RegisterRequest } from '../models/user.model';
 
 interface JwtPayload {
   sub?: string;
-  name?: string;
-  email?: string;
-  roles?: string[];
   role?: string;
-  /** Spring Security format */
+  roles?: string[];
   authorities?: Array<{ authority: string } | string>;
   exp?: number;
 }
@@ -18,11 +17,16 @@ export class AuthService {
   private readonly _user = signal<User | null>(null);
   private readonly _role = signal<string>('ROLE_USER');
 
+  private readonly http = inject(HttpClient);
+  private readonly router = inject(Router);
+
+  private readonly API = 'http://localhost:8091';
+
   readonly user = this._user.asReadonly();
   readonly role = this._role.asReadonly();
   readonly isAuthenticated = computed(() => this._user() !== null);
 
-  constructor(private router: Router) {
+  constructor() {
     const stored = localStorage.getItem('auth_user');
     if (stored) {
       const user: User = JSON.parse(stored);
@@ -36,23 +40,34 @@ export class AuthService {
   }
 
   async login(req: LoginRequest): Promise<void> {
-    // Реальный запрос: POST /api/v1/auth/login → { token: string }
-    // return firstValueFrom(this.http.post<{token:string}>(`${base}/api/v1/auth/login`, req)
-    //   .pipe(tap(r => this.persistFromToken(r.token))));
-    await this.delay(600);
-    if (!req.email || req.password.length < 6) {
-      throw new Error('Неверный email или пароль (мин. 6 символов)');
+    try {
+      const token = await firstValueFrom(
+        this.http.post(
+          `${this.API}/auth/login`,
+          { username: req.email, password: req.password },
+          { responseType: 'text' }
+        )
+      );
+      const role = this.extractRole(token);
+      this.persist({ id: '1', email: req.email, name: req.email.split('@')[0], token, role });
+    } catch (e) {
+      throw new Error(this.parseError(e, 'Неверный email или пароль'));
     }
-    const mockRole = req.email.toLowerCase().includes('admin') ? 'ROLE_ADMIN' : 'ROLE_USER';
-    const token = this.buildMockJwt({ sub: req.email, name: req.email.split('@')[0], roles: [mockRole] });
-    this.persist({ id: '1', email: req.email, name: req.email.split('@')[0], token, role: mockRole });
   }
 
   async register(req: RegisterRequest): Promise<void> {
-    await this.delay(600);
-    if (req.password.length < 6) throw new Error('Пароль должен содержать минимум 6 символов');
-    const token = this.buildMockJwt({ sub: req.email, name: req.name, roles: ['ROLE_USER'] });
-    this.persist({ id: '1', email: req.email, name: req.name, token, role: 'ROLE_USER' });
+    try {
+      await firstValueFrom(
+        this.http.post(
+          `${this.API}/auth/register`,
+          { username: req.email, password: req.password },
+          { responseType: 'text' }
+        )
+      );
+    } catch (e) {
+      throw new Error(this.parseError(e, 'Ошибка регистрации'));
+    }
+    await this.login({ email: req.email, password: req.password });
   }
 
   logout(): void {
@@ -62,13 +77,21 @@ export class AuthService {
     this.router.navigate(['/auth/login']);
   }
 
-  // ─── JWT helpers ───────────────────────────────────────────────────────────
+  private parseError(e: unknown, fallback: string): string {
+    if (e instanceof HttpErrorResponse) {
+      if (e.error instanceof ProgressEvent) {
+        return 'Сервер недоступен. Убедитесь, что auth-service запущен на порту 8091.';
+      }
+      return typeof e.error === 'string' ? e.error : fallback;
+    }
+    return e instanceof Error ? e.message : fallback;
+  }
 
   private extractRole(token: string): string {
     const payload = this.parseJwt(token);
     if (!payload) return 'ROLE_USER';
+    if (typeof payload.role === 'string') return `ROLE_${payload.role}`;
     if (Array.isArray(payload.roles) && payload.roles.length > 0) return payload.roles[0];
-    if (typeof payload.role === 'string') return payload.role;
     if (Array.isArray(payload.authorities) && payload.authorities.length > 0) {
       const first = payload.authorities[0];
       return typeof first === 'string' ? first : first.authority;
@@ -88,21 +111,9 @@ export class AuthService {
     }
   }
 
-  /** Создаёт псевдо-JWT (header.payload.signature) для mock-режима */
-  private buildMockJwt(payload: JwtPayload): string {
-    const enc = (obj: object) => btoa(JSON.stringify(obj)).replace(/=/g, '');
-    const header  = enc({ alg: 'HS256', typ: 'JWT' });
-    const body    = enc({ ...payload, iat: Math.floor(Date.now() / 1000), exp: Math.floor(Date.now() / 1000) + 86400 });
-    return `${header}.${body}.mock-signature`;
-  }
-
   private persist(user: User): void {
     this._user.set(user);
     this._role.set(user.role ?? 'ROLE_USER');
     localStorage.setItem('auth_user', JSON.stringify(user));
-  }
-
-  private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
   }
 }

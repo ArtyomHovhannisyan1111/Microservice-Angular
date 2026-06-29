@@ -1,8 +1,9 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { RouterLink, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Product } from '../../core/models/product.model';
 import { ProductService } from '../../core/services/product.service';
 import { CartService } from '../../core/services/cart.service';
@@ -45,26 +46,6 @@ import { ProductCardComponent } from './product-card/product-card.component';
             </a>
           }
         </div>
-      </div>
-
-      <!-- Category filters -->
-      <div class="flex flex-wrap gap-2 mb-6">
-        <button (click)="selectCategory('')"
-                [class]="selectedCategory() === ''
-                  ? 'bg-primary-600 text-white shadow-sm'
-                  : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-primary-400'"
-                class="px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200">
-          Все
-        </button>
-        @for (cat of categories; track cat) {
-          <button (click)="selectCategory(cat)"
-                  [class]="selectedCategory() === cat
-                    ? 'bg-primary-600 text-white shadow-sm'
-                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-primary-400'"
-                  class="px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200">
-            {{ cat }}
-          </button>
-        }
       </div>
 
       <!-- Skeleton loading -->
@@ -141,6 +122,9 @@ import { ProductCardComponent } from './product-card/product-card.component';
 export class CatalogComponent implements OnInit {
   private productService = inject(ProductService);
   private cartService    = inject(CartService);
+  private route          = inject(ActivatedRoute);
+  private router         = inject(Router);
+  private destroyRef     = inject(DestroyRef);
   readonly auth          = inject(AuthService);
 
   readonly loading          = signal(true);
@@ -154,16 +138,29 @@ export class CatalogComponent implements OnInit {
   searchQuery = '';
   categories: string[] = [];
 
-  async ngOnInit(): Promise<void> {
+  ngOnInit(): void {
     this.categories = this.productService.getCategories();
+
+    this.route.queryParamMap.pipe(
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe(params => {
+      const cat = params.get('category') ?? '';
+      this.selectedCategory.set(cat);
+      this.filterProducts();
+    });
+
+    this.loadProducts();
+  }
+
+  private async loadProducts(): Promise<void> {
     this.allProducts = await firstValueFrom(this.productService.getProducts());
     this.filteredProducts.set(this.allProducts);
+    this.filterProducts();
     this.loading.set(false);
   }
 
   selectCategory(cat: string): void {
-    this.selectedCategory.set(cat);
-    this.filterProducts();
+    this.router.navigate([], { queryParams: cat ? { category: cat } : {}, relativeTo: this.route });
   }
 
   filterProducts(): void {
