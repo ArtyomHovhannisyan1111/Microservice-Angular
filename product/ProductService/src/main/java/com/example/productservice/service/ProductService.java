@@ -1,0 +1,126 @@
+package com.example.productservice.service;
+
+import com.example.productservice.config.KafkaTopicConfig;
+import com.example.productservice.dto.ProductRequest;
+import com.example.productservice.model.Product;
+import com.example.productservice.exception.ProductAlreadyExistsException;
+import com.example.productservice.exception.ProductNotFoundException;
+import com.example.productservice.mapper.ProductMapper;
+import com.example.productservice.repository.ProductRepository;
+import com.example.productservice.util.ProductValidationUtils;
+import lombok.RequiredArgsConstructor;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class ProductService {
+
+    private final ProductRepository productRepository;
+    private final KafkaTemplate<Integer, Object> kafkaTemplate;
+
+    public List<Product> getProducts() {
+        return productRepository.findAll();
+    }
+
+    public Product getProduct(Integer id) {
+        return findProduct(id);
+    }
+
+    public List<Product> searchProducts(String name) {
+        if (name == null || name.trim().isBlank()) {
+            return getProducts();
+        }
+        return productRepository.findByNameContainingIgnoreCase(name);
+    }
+
+    public List<Product> getLowStockProducts(Integer threshold) {
+        ProductValidationUtils.validateThreshold(threshold);
+        return productRepository.findByQuantityLessThanEqual(threshold);
+    }
+
+    @Transactional
+    public Product saveProduct(ProductRequest request) {
+        String normalizedName = ProductValidationUtils.normalizeName(request.getName());
+        validateUniqueName(normalizedName, null);
+
+        Product product = ProductMapper.toEntity(request, normalizedName);
+        Product savedProduct = productRepository.save(product);
+
+        publishProductEvent(savedProduct);
+
+        return savedProduct;
+    }
+
+    @Transactional
+    public Product updateProduct(Integer id, ProductRequest request) {
+        Product product = findProduct(id);
+        String normalizedName = ProductValidationUtils.normalizeName(request.getName());
+        validateUniqueName(normalizedName, id);
+
+        product.setName(normalizedName);
+        product.setPrice(request.getPrice());
+        product.setQuantity(request.getQuantity());
+
+        Product updatedProduct = productRepository.save(product);
+        publishProductEvent(updatedProduct);
+
+        return updatedProduct;
+    }
+
+    @Transactional
+    public void deleteProduct(Integer id) {
+        Product product = findProduct(id);
+        productRepository.delete(product);
+    }
+
+    @Transactional
+    public Product increaseStock(Integer id, Integer quantity) {
+        ProductValidationUtils.validatePositiveQuantity(quantity);
+
+        Product product = findProduct(id);
+        product.setQuantity(getCurrentStock(product) + quantity);
+
+        Product updatedProduct = productRepository.save(product);
+        publishProductEvent(updatedProduct);
+
+        return updatedProduct;
+    }
+
+    @Transactional
+    public Product decreaseStock(Integer id, Integer quantity) {
+        ProductValidationUtils.validatePositiveQuantity(quantity);
+
+        Product product = findProduct(id);
+        int current = getCurrentStock(product);
+        if (current < quantity) {
+            throw new InsufficientStockException(id, quantity, current);
+        }
+        product.setQuantity(current - quantity);
+
+        return productRepository.save(product);
+    }
+
+    private void publishProductEvent(Product product) {
+        kafkaTemplate.send(KafkaTopicConfig.PRODUCT_EVENTS_TOPIC, product.getId(), product);
+    }
+
+    private Product findProduct(Integer id) {
+        return productRepository.findById(id)
+                .orElseThrow(() -> new ProductNotFoundException(id));
+    }
+
+    private void validateUniqueName(String name, Integer id) {
+        if (id == null ? productRepository.existsByNameIgnoreCase(name)
+                : productRepository.existsByNameIgnoreCaseAndIdNot(name, id)) {
+            throw new ProductAlreadyExistsException(name);
+        }
+    }
+
+    private Integer getCurrentStock(Product product) {
+        return product.getQuantity() == null ? 0 : product.getQuantity();
+    }
+}

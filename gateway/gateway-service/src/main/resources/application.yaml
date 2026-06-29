@@ -1,0 +1,32 @@
+server:
+  port: 8090
+
+spring:
+  application:
+    name: gateway-service
+
+  cloud:
+    gateway:
+      routes:
+        - id: product-service
+          uri: http://product-service:8080
+          predicates:
+            - Path=/api/products/**
+
+        - id: order-service
+          uri: http://order-service:8080
+          predicates:
+            - Path=/api/orders/**
+
+        - id: auth-service
+          uri: http://auth-service:8080
+          predicates:
+            - Path=/auth/**
+
+        - id: notification-service
+          uri: http://notification-service:8080
+          predicates:
+            - Path=/api/notifications/**
+
+jwt:
+  secret: ${JWT_SECRET:A9gX7mP2qK5zW1vB8nR4tY0eU3iO6pL9sJ2dH5fG8hK1lM4nJ3bV6cC9vX0zZ1qA}
