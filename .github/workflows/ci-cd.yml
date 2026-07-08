@@ -1,0 +1,281 @@
+# =============================================================================
+# CI/CD Pipeline — Mikroservis Monorepo
+# =============================================================================
+# Текущий режим: Test → Build (без Lint)
+#
+# Lint подключить позже:
+#   Backend:  добавить maven-checkstyle-plugin в pom.xml каждого сервиса
+#   Frontend: ng add @angular-eslint/schematics + "lint": "ng lint" в package.json
+# =============================================================================
+
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+# Отменяем устаревший запуск при новом push в ту же ветку
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  JAVA_VERSION: '17'
+  NODE_VERSION: '18'
+  MAVEN_OPTS: '-Xmx1024m -XX:+TieredCompilation -XX:TieredStopAtLevel=1'
+
+jobs:
+
+  # ============================================================================
+  # STAGE 0 — ОПРЕДЕЛЕНИЕ ИЗМЕНЕНИЙ
+  # Запускаем тесты/сборку только для тех сервисов, в которых были изменения
+  # ============================================================================
+  detect-changes:
+    name: "Определение изменений"
+    runs-on: ubuntu-latest
+    outputs:
+      any-backend:    ${{ steps.any-backend.outputs.changed }}
+      frontend:       ${{ steps.filter.outputs.frontend }}
+      backend-matrix: ${{ steps.build-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Проверка изменённых путей
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            auth:
+              - 'auth2/auth-service/**'
+            gateway:
+              - 'gateway/gateway-service/**'
+            product:
+              - 'product/ProductService/**'
+            order:
+              - 'order/Order-Service/**'
+            user:
+              - 'user/user-service/**'
+            notification:
+              - 'notification/Notifictaion-Service/**'
+            payment:
+              - 'payment/payment-service/**'
+            image:
+              - 'image/image-service/**'
+            analytics:
+              - 'analytics/analytics-service/**'
+            frontend:
+              - 'frontend/**'
+
+      - name: Проверяем наличие изменений в бэкенде
+        id: any-backend
+        run: |
+          if [[ \
+            "${{ steps.filter.outputs.auth }}"         == "true" || \
+            "${{ steps.filter.outputs.gateway }}"      == "true" || \
+            "${{ steps.filter.outputs.product }}"      == "true" || \
+            "${{ steps.filter.outputs.order }}"        == "true" || \
+            "${{ steps.filter.outputs.user }}"         == "true" || \
+            "${{ steps.filter.outputs.notification }}" == "true" || \
+            "${{ steps.filter.outputs.payment }}"      == "true" || \
+            "${{ steps.filter.outputs.image }}"        == "true" || \
+            "${{ steps.filter.outputs.analytics }}"    == "true" \
+          ]]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Формируем JSON-матрицу изменённых сервисов
+        id: build-matrix
+        run: |
+          services=()
+
+          [[ "${{ steps.filter.outputs.auth }}" == "true" ]] && \
+            services+=('{"name":"auth-service","path":"auth2/auth-service"}')
+          [[ "${{ steps.filter.outputs.gateway }}" == "true" ]] && \
+            services+=('{"name":"gateway-service","path":"gateway/gateway-service"}')
+          [[ "${{ steps.filter.outputs.product }}" == "true" ]] && \
+            services+=('{"name":"product-service","path":"product/ProductService"}')
+          [[ "${{ steps.filter.outputs.order }}" == "true" ]] && \
+            services+=('{"name":"order-service","path":"order/Order-Service"}')
+          [[ "${{ steps.filter.outputs.user }}" == "true" ]] && \
+            services+=('{"name":"user-service","path":"user/user-service/user-service"}')
+          [[ "${{ steps.filter.outputs.notification }}" == "true" ]] && \
+            services+=('{"name":"notification-service","path":"notification/Notifictaion-Service"}')
+          [[ "${{ steps.filter.outputs.payment }}" == "true" ]] && \
+            services+=('{"name":"payment-service","path":"payment/payment-service/Payment-Service"}')
+          [[ "${{ steps.filter.outputs.image }}" == "true" ]] && \
+            services+=('{"name":"image-service","path":"image/image-service/image-service"}')
+          [[ "${{ steps.filter.outputs.analytics }}" == "true" ]] && \
+            services+=('{"name":"analytics-service","path":"analytics/analytics-service"}')
+
+          if [ ${#services[@]} -eq 0 ]; then
+            echo 'matrix={"include":[]}' >> $GITHUB_OUTPUT
+          else
+            joined=$(IFS=,; echo "${services[*]}")
+            echo "matrix={\"include\":[$joined]}" >> $GITHUB_OUTPUT
+          fi
+
+  # ============================================================================
+  # STAGE 1 — ТЕСТЫ БЭКЕНД-СЕРВИСОВ
+  # Testcontainers сам поднимает PostgreSQL/Kafka внутри раннера — отдельно
+  # конфигурировать сервисы не нужно. Нужен только доступный Docker daemon.
+  # ============================================================================
+  test-backend:
+    name: "Тесты — ${{ matrix.name }}"
+    needs: detect-changes
+    if: needs.detect-changes.outputs.any-backend == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.detect-changes.outputs.backend-matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # cache: maven кэширует ~/.m2/repository по хэшу pom.xml
+      - name: Установка JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: temurin
+          cache: maven
+
+      # RYUK отключаем — в GitHub Actions он вызывает проблемы с правами
+      - name: "Тесты — ${{ matrix.name }}"
+        working-directory: ${{ matrix.path }}
+        run: mvn test --no-transfer-progress
+        env:
+          TESTCONTAINERS_RYUK_DISABLED: 'true'
+
+      # Публикуем отчёт о тестах в интерфейс PR/Actions
+      - name: Публикация результатов тестов
+        uses: mikepenz/action-junit-report@v4
+        if: always()
+        with:
+          report_paths: '${{ matrix.path }}/target/surefire-reports/TEST-*.xml'
+          check_name: 'Tests — ${{ matrix.name }}'
+
+  # ============================================================================
+  # STAGE 2 — СБОРКА JAR
+  # ============================================================================
+  build-backend:
+    name: "Сборка JAR — ${{ matrix.name }}"
+    needs: [ detect-changes, test-backend ]
+    if: needs.detect-changes.outputs.any-backend == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.detect-changes.outputs.backend-matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Установка JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: temurin
+          cache: maven
+
+      - name: "Сборка JAR — ${{ matrix.name }}"
+        working-directory: ${{ matrix.path }}
+        run: mvn package -DskipTests --no-transfer-progress
+
+      - name: Сохранение JAR-артефакта
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}-jar
+          path: ${{ matrix.path }}/target/*.jar
+          retention-days: 7
+
+  # ============================================================================
+  # STAGE 2 — СБОРКА ФРОНТЕНДА
+  # ============================================================================
+  build-frontend:
+    name: "Сборка Angular (production)"
+    needs: detect-changes
+    if: needs.detect-changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # cache: npm кэширует ~/.npm по хэшу package-lock.json
+      - name: Установка Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      # npm ci — детерминированная установка строго по lock-файлу
+      - name: Установка npm-зависимостей
+        working-directory: frontend
+        run: npm ci
+
+      - name: "Сборка production-бандла"
+        working-directory: frontend
+        run: npm run build -- --configuration production
+
+      - name: Сохранение dist-артефакта
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+          retention-days: 7
+
+# =============================================================================
+# STAGE 3 — DOCKER BUILD & PUSH (закомментировано — раскомментировать позже)
+#
+# Требования:
+#   Секреты GitHub: DOCKER_USERNAME, DOCKER_TOKEN (Settings → Secrets → Actions)
+# =============================================================================
+
+# docker-build-push:
+#   name: "Docker — ${{ matrix.name }}"
+#   needs: [ detect-changes, build-backend ]
+#   if: |
+#     github.ref == 'refs/heads/main' &&
+#     needs.detect-changes.outputs.any-backend == 'true'
+#   runs-on: ubuntu-latest
+#   strategy:
+#     fail-fast: false
+#     matrix:
+#       include:
+#         - { name: auth-service,         path: auth2/auth-service,                          dockerfile: auth2/auth-service/Dockerfile }
+#         - { name: gateway-service,       path: gateway/gateway-service,                     dockerfile: gateway/Dockerfile }
+#         - { name: product-service,       path: product/ProductService,                      dockerfile: product/Dockerfile }
+#         - { name: order-service,         path: order/Order-Service,                         dockerfile: order/Dockerfile }
+#         - { name: user-service,          path: user/user-service/user-service,              dockerfile: user/Dockerfile }
+#         - { name: notification-service,  path: notification/Notifictaion-Service,           dockerfile: notification/Dockerfile }
+#         - { name: payment-service,       path: payment/payment-service/Payment-Service,     dockerfile: payment/payment-service/Payment-Service/Dockerfile }
+#         - { name: image-service,         path: image/image-service/image-service,           dockerfile: image/Dockerfile }
+#         - { name: analytics-service,     path: analytics/analytics-service,                 dockerfile: analytics/analytics-service/Dockerfile }
+#   steps:
+#     - uses: actions/checkout@v4
+#     - name: Логин в Docker Hub
+#       uses: docker/login-action@v3
+#       with:
+#         username: ${{ secrets.DOCKER_USERNAME }}
+#         password: ${{ secrets.DOCKER_TOKEN }}
+#     - name: Настройка Docker Buildx
+#       uses: docker/setup-buildx-action@v3
+#     - name: Генерация тегов
+#       id: meta
+#       uses: docker/metadata-action@v5
+#       with:
+#         images: ${{ secrets.DOCKER_USERNAME }}/${{ matrix.name }}
+#         tags: |
+#           type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+#           type=ref,event=branch
+#           type=sha,prefix=sha-,format=short
+#     - name: "Build & Push — ${{ matrix.name }}"
+#       uses: docker/build-push-action@v5
+#       with:
+#         context: ${{ matrix.path }}
+#         file: ${{ matrix.dockerfile }}
+#         push: true
+#         tags: ${{ steps.meta.outputs.tags }}
+#         labels: ${{ steps.meta.outputs.labels }}
+#         cache-from: type=gha
+#         cache-to: type=gha,mode=max
