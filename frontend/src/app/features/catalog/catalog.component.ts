@@ -1,9 +1,10 @@
-import { Component, inject, signal, OnInit, DestroyRef } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { TranslateModule } from '@ngx-translate/core';
 import { Product } from '../../core/models/product.model';
 import { ProductService } from '../../core/services/product.service';
 import { CartService } from '../../core/services/cart.service';
@@ -13,14 +14,16 @@ import { ProductCardComponent } from './product-card/product-card.component';
 @Component({
   selector: 'app-catalog',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, ProductCardComponent],
+  imports: [CommonModule, RouterLink, FormsModule, ProductCardComponent, TranslateModule],
   template: `
     <div>
       <!-- Header -->
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
-          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Каталог товаров</h1>
-          <p class="text-gray-500 dark:text-gray-400 mt-1">{{ filteredProducts().length }} товаров</p>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ 'CATALOG.TITLE' | translate }}</h1>
+          <p class="text-gray-500 dark:text-gray-400 mt-1">
+            {{ searchQuery ? filteredProducts().length + ' ' + ('COMMON.OF' | translate) + ' ' + totalElements() : totalElements() }} {{ 'CATALOG.PRODUCTS' | translate }}
+          </p>
         </div>
         <div class="flex items-center gap-3">
           <!-- Search -->
@@ -30,8 +33,8 @@ import { ProductCardComponent } from './product-card/product-card.component';
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
             </svg>
-            <input [(ngModel)]="searchQuery" (ngModelChange)="filterProducts()"
-                   type="text" placeholder="Поиск..." class="input-field pl-10 w-56">
+            <input [(ngModel)]="searchQuery" (ngModelChange)="onSearchChange()"
+                   type="text" [placeholder]="'COMMON.SEARCH' | translate" class="input-field pl-10 w-56">
           </div>
           <!-- Admin: add product button -->
           @if (auth.isAdmin()) {
@@ -42,7 +45,7 @@ import { ProductCardComponent } from './product-card/product-card.component';
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                       d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
               </svg>
-              Добавить товар
+              {{ 'CATALOG.ADD_PRODUCT' | translate }}
             </a>
           }
         </div>
@@ -86,13 +89,54 @@ import { ProductCardComponent } from './product-card/product-card.component';
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                     d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
-            <p class="text-gray-500 dark:text-gray-400 font-medium">Товары не найдены</p>
+            <p class="text-gray-500 dark:text-gray-400 font-medium">{{ 'CATALOG.NOT_FOUND' | translate }}</p>
             <button (click)="resetFilters()"
                     class="mt-4 text-primary-600 dark:text-primary-400 text-sm hover:underline">
-              Сбросить фильтры
+              {{ 'CATALOG.RESET_FILTERS' | translate }}
             </button>
           </div>
         }
+      }
+
+      <!-- Pagination -->
+      @if (!loading() && totalPages() > 1) {
+        <div class="flex items-center justify-center gap-1 mt-10">
+          <button (click)="goToPage(currentPage() - 1)"
+                  [disabled]="currentPage() === 0"
+                  class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-300
+                         dark:border-gray-600 text-gray-600 dark:text-gray-300
+                         hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40
+                         disabled:cursor-not-allowed transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+          </button>
+
+          @for (page of pageNumbers(); track page) {
+            @if (page === -1) {
+              <span class="w-9 h-9 flex items-center justify-center text-gray-400 dark:text-gray-500 text-sm">…</span>
+            } @else {
+              <button (click)="goToPage(page)"
+                      class="w-9 h-9 flex items-center justify-center rounded-lg text-sm font-medium transition-colors"
+                      [class]="page === currentPage()
+                        ? 'bg-primary-600 text-white border border-primary-600'
+                        : 'border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'">
+                {{ page + 1 }}
+              </button>
+            }
+          }
+
+          <button (click)="goToPage(currentPage() + 1)"
+                  [disabled]="currentPage() === totalPages() - 1"
+                  class="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-300
+                         dark:border-gray-600 text-gray-600 dark:text-gray-300
+                         hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40
+                         disabled:cursor-not-allowed transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+          </button>
+        </div>
       }
 
       <!-- Toast -->
@@ -132,11 +176,33 @@ export class CatalogComponent implements OnInit {
   readonly selectedCategory = signal('');
   readonly toastVisible     = signal(false);
   readonly toastMessage     = signal('');
+  readonly currentPage      = signal(0);
+  readonly totalPages       = signal(0);
+  readonly totalElements    = signal(0);
 
-  readonly skeletons = Array(8).fill(0);
+  readonly pageNumbers = computed(() => {
+    const total = this.totalPages();
+    const cur   = this.currentPage();
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i);
+    const pages: number[] = [];
+    const addPage = (p: number) => { if (!pages.includes(p)) pages.push(p); };
+    [0, 1].forEach(addPage);
+    for (let i = Math.max(2, cur - 1); i <= Math.min(total - 3, cur + 1); i++) addPage(i);
+    [total - 2, total - 1].forEach(addPage);
+    const result: number[] = [];
+    pages.sort((a, b) => a - b).forEach((p, i, arr) => {
+      if (i > 0 && p - arr[i - 1] > 1) result.push(-1);
+      result.push(p);
+    });
+    return result;
+  });
+
+  readonly skeletons = Array(10).fill(0);
   private allProducts: Product[] = [];
   searchQuery = '';
   categories: string[] = [];
+
+  private searchTimeout: any;
 
   ngOnInit(): void {
     this.categories = this.productService.getCategories();
@@ -146,17 +212,30 @@ export class CatalogComponent implements OnInit {
     ).subscribe(params => {
       const cat = params.get('category') ?? '';
       this.selectedCategory.set(cat);
-      this.filterProducts();
+      this.loadProducts(0);
     });
-
-    this.loadProducts();
   }
 
-  private async loadProducts(): Promise<void> {
-    this.allProducts = await firstValueFrom(this.productService.getProducts());
-    this.filteredProducts.set(this.allProducts);
-    this.filterProducts();
+  private async loadProducts(page = 0): Promise<void> {
+    this.loading.set(true);
+    const res = await firstValueFrom(this.productService.getProductsPaged(page, 10, this.searchQuery, this.selectedCategory()));
+    this.allProducts = res.items;
+    this.currentPage.set(page);
+    this.totalPages.set(res.totalPages);
+    this.totalElements.set(res.totalElements);
+    this.filteredProducts.set(res.items);
     this.loading.set(false);
+  }
+
+  onSearchChange(): void {
+    clearTimeout(this.searchTimeout);
+    this.searchTimeout = setTimeout(() => this.loadProducts(0), 400);
+  }
+
+  goToPage(page: number): void {
+    if (page < 0 || page >= this.totalPages()) return;
+    this.loadProducts(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   selectCategory(cat: string): void {
@@ -164,23 +243,13 @@ export class CatalogComponent implements OnInit {
   }
 
   filterProducts(): void {
-    let list = this.allProducts;
-    if (this.selectedCategory()) {
-      list = list.filter(p => p.category === this.selectedCategory());
-    }
-    if (this.searchQuery.trim()) {
-      const q = this.searchQuery.toLowerCase();
-      list = list.filter(p =>
-        p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q)
-      );
-    }
-    this.filteredProducts.set(list);
+    this.filteredProducts.set(this.allProducts);
   }
 
   resetFilters(): void {
     this.searchQuery = '';
     this.selectedCategory.set('');
-    this.filteredProducts.set(this.allProducts);
+    this.loadProducts(0);
   }
 
   onAddToCart(product: Product): void {

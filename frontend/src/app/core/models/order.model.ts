@@ -1,4 +1,4 @@
-export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'confirmed';
+export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'confirmed' | 'approved' | 'rejected';
 
 export interface ShippingAddress {
   fullName: string;
@@ -16,20 +16,23 @@ export interface OrderItem {
   price: number;
 }
 
+/** Ответ бекенда */
 export interface Order {
-  id: string;
-  /** Email пользователя — заполняется при создании заказа для отправки уведомлений */
-  userEmail?: string;
-  items: OrderItem[];
-  total: number;
+  id: number;
+  userId: number;
+  productId: number;
+  quantity: number;
+  totalPrice: number;
   status: OrderStatus;
-  createdAt: Date;
-  shippingAddress: ShippingAddress;
+  userEmail?: string;
+  userName?: string;
 }
 
 export interface CreateOrderRequest {
-  items: OrderItem[];
-  shippingAddress: ShippingAddress;
-  total: number;
+  requestId: string;
+  userId?: number;
+  productId: number;
+  quantity: number;
   userEmail?: string;
+  userName?: string;
 }

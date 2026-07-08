@@ -6,5 +6,9 @@
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
 
     <include file="db/changelog/01-create-orders-table.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/02-create-request-logs-table.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/03-add-user-email-name-to-orders.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/04-rename-requestlogs-to-request-logs.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/05-add-created-at-to-orders.xml" relativeToChangelogFile="false"/>
 
 </databaseChangeLog>

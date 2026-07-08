@@ -6,6 +6,11 @@
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
     <changeSet id="20260625-2" author="admin">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="notifications" columnName="total_price"/>
+            </not>
+        </preConditions>
         <addColumn tableName="notifications">
             <column name="total_price" type="NUMERIC(38, 2)"/>
         </addColumn>

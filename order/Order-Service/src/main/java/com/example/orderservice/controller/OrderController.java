@@ -37,6 +37,11 @@ public class OrderController {
         return orderService.getAllOrders();
     }
 
+    @GetMapping("/my")
+    public List<Order> getMyOrders(@org.springframework.web.bind.annotation.RequestParam Integer userId) {
+        return orderService.getOrdersByUserId(userId);
+    }
+
     @GetMapping("/{id}")
     public Order getOrderById(@PathVariable Integer id) {
         return orderService.getOrderById(id);

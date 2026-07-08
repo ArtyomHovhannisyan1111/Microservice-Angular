@@ -26,4 +26,7 @@ public class Product implements Serializable {
     private String name;
     private BigDecimal price;
     private Integer quantity;
+    private String imageUrl;
+    private String category;
+    private Long categoryId;
 }

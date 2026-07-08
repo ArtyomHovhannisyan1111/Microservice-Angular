@@ -28,8 +28,7 @@ export const routes: Routes = [
   },
   {
     path: 'catalog',
-    loadComponent: () => import('./features/catalog/catalog.component').then(m => m.CatalogComponent),
-    canActivate: [authGuard]
+    loadComponent: () => import('./features/catalog/catalog.component').then(m => m.CatalogComponent)
   },
   {
     path: 'cart',
@@ -54,6 +53,16 @@ export const routes: Routes = [
   {
     path: 'admin/orders',
     loadComponent: () => import('./features/admin/admin-orders/admin-orders.component').then(m => m.AdminOrdersComponent),
+    canActivate: [authGuard, adminGuard]
+  },
+  {
+    path: 'admin/images',
+    loadComponent: () => import('./features/admin/image-manager/image-manager.component').then(m => m.ImageManagerComponent),
+    canActivate: [authGuard, adminGuard]
+  },
+  {
+    path: 'admin/analytics',
+    loadComponent: () => import('./features/admin/analytics/analytics.component').then(m => m.AnalyticsComponent),
     canActivate: [authGuard, adminGuard]
   },
   { path: '**', redirectTo: '/catalog' }

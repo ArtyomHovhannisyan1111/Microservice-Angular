@@ -4,13 +4,14 @@ import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { TranslateModule } from '@ngx-translate/core';
 
 const AUTH_URL = 'http://localhost:8091';
 
 @Component({
   selector: 'app-forgot-password',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, TranslateModule],
   template: `
     <div class="min-h-[calc(100vh-8rem)] flex items-center justify-center py-12">
       <div class="w-full max-w-md">
@@ -24,8 +25,8 @@ const AUTH_URL = 'http://localhost:8091';
                     d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
             </svg>
           </div>
-          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Восстановление пароля</h1>
-          <p class="text-gray-500 dark:text-gray-400 mt-1">Укажите email для получения инструкций</p>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ 'AUTH.RECOVERY_TITLE' | translate }}</h1>
+          <p class="text-gray-500 dark:text-gray-400 mt-1">{{ 'AUTH.RECOVERY_SUBTITLE' | translate }}</p>
         </div>
 
         <div class="card p-8">
@@ -39,13 +40,13 @@ const AUTH_URL = 'http://localhost:8091';
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                 </svg>
               </div>
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Письмо отправлено!</h2>
+              <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">{{ 'AUTH.EMAIL_SENT_TITLE' | translate }}</h2>
               <p class="text-gray-500 dark:text-gray-400 text-sm mb-6">
-                Проверьте входящие и папку «Спам» для<br>
+                {{ 'AUTH.CHECK_INBOX' | translate }}<br>
                 <strong class="text-gray-700 dark:text-gray-200">{{ sentEmail() }}</strong>
               </p>
               <a routerLink="/auth/login" class="btn-primary inline-block">
-                Вернуться ко входу
+                {{ 'AUTH.BACK_TO_LOGIN' | translate }}
               </a>
             </div>
 
@@ -54,13 +55,13 @@ const AUTH_URL = 'http://localhost:8091';
             <form [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-5">
               <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                  Email
+                  {{ 'AUTH.EMAIL' | translate }}
                 </label>
                 <input formControlName="email" type="email" placeholder="you@example.com"
                        class="input-field"
                        [class.border-red-500]="f['email'].invalid && f['email'].touched">
                 @if (f['email'].invalid && f['email'].touched) {
-                  <p class="text-red-500 text-xs mt-1">Введите корректный email</p>
+                  <p class="text-red-500 text-xs mt-1">{{ 'AUTH.INVALID_EMAIL' | translate }}</p>
                 }
               </div>
 
@@ -79,15 +80,15 @@ const AUTH_URL = 'http://localhost:8091';
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
                   </svg>
                 }
-                {{ loading() ? 'Отправка...' : 'Отправить ссылку' }}
+                {{ (loading() ? 'AUTH.SENDING' : 'AUTH.SEND_LINK') | translate }}
               </button>
             </form>
 
             <p class="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
-              Вспомнили пароль?
+              {{ 'AUTH.REMEMBER_PASSWORD' | translate }}
               <a routerLink="/auth/login"
                  class="text-primary-600 dark:text-primary-400 font-medium hover:underline">
-                Войти
+                {{ 'NAV.LOGIN' | translate }}
               </a>
             </p>
           }

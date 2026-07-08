@@ -1,0 +1,55 @@
+package com.example.orderservice.SchedulerTask;
+
+import com.example.orderservice.Dto.NotificationConfirmRequest;
+import com.example.orderservice.Repository.OrderRepository;
+import com.example.orderservice.client.NotificationFeignClient;
+import com.example.orderservice.model.Order;
+import com.example.orderservice.model.OrderStatus;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+
+import java.math.BigDecimal;
+import java.util.List;
+
+@Slf4j
+@Component
+@RequiredArgsConstructor
+public class OrderTask {
+
+    private final OrderRepository orderRepository;
+    private final NotificationFeignClient notificationFeignClient;
+
+    @Scheduled(fixedRate =300000)
+    public void checkPendingOrders() {
+        List<Order> pendingOrders = orderRepository.findByStatus(OrderStatus.PENDING);
+
+        if (pendingOrders.isEmpty()) {
+            return;
+        }
+
+        log.info("Found {} pending orders to process", pendingOrders.size());
+
+        for (Order order : pendingOrders) {
+            try {
+                notificationFeignClient.confirmOrder(
+                        NotificationConfirmRequest.builder()
+                                .orderId(order.getId().longValue())
+                                .userId(order.getUserId() != null ? order.getUserId().longValue() : 0L)
+                                .userEmail(order.getUserEmail() != null ? order.getUserEmail() : "")
+                                .userName(order.getUserName() != null ? order.getUserName() : "Покупатель")
+                                .totalPrice(order.getTotalPrice() != null ? order.getTotalPrice() : BigDecimal.ZERO)
+                                .build()
+                );
+
+                order.setStatus(OrderStatus.CONFIRMED);
+                orderRepository.save(order);
+                log.info("Order {} confirmed successfully", order.getId());
+
+            } catch (Exception e) {
+                log.error("Failed to process order {}: {}", order.getId(), e.getMessage());
+            }
+        }
+    }
+}

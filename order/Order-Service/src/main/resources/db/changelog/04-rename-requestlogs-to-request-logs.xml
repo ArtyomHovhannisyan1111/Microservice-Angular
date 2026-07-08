@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="4" author="admin">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="RequestLogs"/>
+                <not><tableExists tableName="request_logs"/></not>
+            </and>
+        </preConditions>
+        <renameTable oldTableName="RequestLogs" newTableName="request_logs"/>
+    </changeSet>
+
+</databaseChangeLog>

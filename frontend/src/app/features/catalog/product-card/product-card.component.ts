@@ -1,5 +1,7 @@
 import { Component, Input, Output, EventEmitter, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
+import { TranslateModule } from '@ngx-translate/core';
 import { Product } from '../../../core/models/product.model';
 import { ImageUrlPipe, IMAGE_PLACEHOLDER } from '../../../core/pipes/image-url.pipe';
 import { AuthService } from '../../../core/services/auth.service';
@@ -7,7 +9,7 @@ import { AuthService } from '../../../core/services/auth.service';
 @Component({
   selector: 'app-product-card',
   standalone: true,
-  imports: [CommonModule, ImageUrlPipe],
+  imports: [CommonModule, ImageUrlPipe, TranslateModule],
   template: `
     <div class="card flex flex-col overflow-hidden group hover:shadow-md transition-shadow duration-200">
       <!-- Image -->
@@ -28,7 +30,7 @@ import { AuthService } from '../../../core/services/auth.service';
         @if (product.stock === 0) {
           <div class="absolute inset-0 bg-black/50 flex items-center justify-center">
             <span class="bg-white text-gray-800 font-semibold text-sm px-3 py-1.5 rounded-full shadow">
-              Нет в наличии
+              {{ 'PRODUCT.OUT_OF_STOCK' | translate }}
             </span>
           </div>
         }
@@ -86,13 +88,13 @@ import { AuthService } from '../../../core/services/auth.service';
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                 </svg>
-                Добавлено
+                {{ 'PRODUCT.ADDED' | translate }}
               } @else {
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                 </svg>
-                В корзину
+                {{ 'PRODUCT.ADD_TO_CART' | translate }}
               }
             </button>
           }
@@ -106,12 +108,17 @@ export class ProductCardComponent {
   @Output() addToCart    = new EventEmitter<Product>();
   @Output() deleteProduct = new EventEmitter<string>();
 
-  readonly auth  = inject(AuthService);
-  readonly stars = [0, 1, 2, 3, 4];
-  readonly added = signal(false);
-  readonly Math  = Math;
+  readonly auth   = inject(AuthService);
+  private  router = inject(Router);
+  readonly stars  = [0, 1, 2, 3, 4];
+  readonly added  = signal(false);
+  readonly Math   = Math;
 
   onAdd(): void {
+    if (!this.auth.isAuthenticated()) {
+      this.router.navigate(['/auth/login'], { queryParams: { returnUrl: '/cart' } });
+      return;
+    }
     this.addToCart.emit(this.product);
     this.added.set(true);
     setTimeout(() => this.added.set(false), 2000);

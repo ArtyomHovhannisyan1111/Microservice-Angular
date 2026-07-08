@@ -11,32 +11,7 @@ export interface AppNotification {
 
 @Injectable({ providedIn: 'root' })
 export class NotificationService {
-  private readonly _items = signal<AppNotification[]>([
-    {
-      id: '1',
-      title: 'Заказ принят',
-      message: 'Ваш заказ #1023 успешно оформлен и передан в доставку',
-      timestamp: new Date(Date.now() - 5 * 60_000),
-      read: false,
-      type: 'success'
-    },
-    {
-      id: '2',
-      title: 'Новые товары',
-      message: 'В каталоге появились свежие поступления электроники!',
-      timestamp: new Date(Date.now() - 60 * 60_000),
-      read: false,
-      type: 'info'
-    },
-    {
-      id: '3',
-      title: 'Специальное предложение',
-      message: 'Скидки до 30% на электронику — только до конца недели',
-      timestamp: new Date(Date.now() - 3 * 60 * 60_000),
-      read: true,
-      type: 'info'
-    }
-  ]);
+  private readonly _items = signal<AppNotification[]>([]);
 
   readonly items = this._items.asReadonly();
   readonly unreadCount = computed(() => this._items().filter(n => !n.read).length);

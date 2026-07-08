@@ -1,0 +1,389 @@
+<input
+  #fileInput
+  type="file"
+  class="sr-only"
+  [accept]="config.acceptedExtensions"
+  (change)="onFileInputChange($event)"
+  aria-hidden="true"
+/>
+
+<div class="im-root">
+
+  <!-- ═══════════════════════════════ HEADER ══════════════════════════════ -->
+  <header class="im-header">
+    <div class="im-header__left">
+      <div class="im-header__icon" aria-hidden="true">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2"/>
+          <circle cx="8.5" cy="8.5" r="1.5"/>
+          <polyline points="21 15 16 10 5 21"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="im-header__title">{{ 'IMAGE_MANAGER.TITLE' | translate }}</h1>
+        <p class="im-header__subtitle">{{ 'IMAGE_MANAGER.SUBTITLE' | translate }}</p>
+      </div>
+    </div>
+
+    <div class="im-stats" role="status" [attr.aria-label]="'IMAGE_MANAGER.STATS_ARIA' | translate">
+      <div class="im-stat">
+        <span class="im-stat__value">{{ totalCount() }}</span>
+        <span class="im-stat__label">{{ 'IMAGE_MANAGER.STAT_TOTAL' | translate }}</span>
+      </div>
+      <div class="im-stat im-stat--pending">
+        <span class="im-stat__value">{{ pendingCount() }}</span>
+        <span class="im-stat__label">{{ 'IMAGE_MANAGER.STAT_PENDING' | translate }}</span>
+      </div>
+      <div class="im-stat im-stat--uploading" [class.im-stat--active]="uploadingCount() > 0">
+        <span class="im-stat__value">{{ uploadingCount() }}</span>
+        <span class="im-stat__label">{{ 'IMAGE_MANAGER.STAT_UPLOADING' | translate }}</span>
+      </div>
+      <div class="im-stat im-stat--success">
+        <span class="im-stat__value">{{ successCount() }}</span>
+        <span class="im-stat__label">{{ 'IMAGE_MANAGER.STAT_DONE' | translate }}</span>
+      </div>
+      @if (errorCount() > 0) {
+        <div class="im-stat im-stat--error">
+          <span class="im-stat__value">{{ errorCount() }}</span>
+          <span class="im-stat__label">{{ 'IMAGE_MANAGER.STAT_ERRORS' | translate }}</span>
+        </div>
+      }
+    </div>
+  </header>
+
+  <!-- ════════════════════════════ TOOLBAR ════════════════════════════════ -->
+  <div class="im-toolbar">
+
+    <!-- Folder selector -->
+    <div class="im-folders" role="group" [attr.aria-label]="'IMAGE_MANAGER.FOLDER_ARIA' | translate">
+      <span class="im-folders__label">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+        </svg>
+        {{ 'IMAGE_MANAGER.FOLDER_LABEL' | translate }}
+      </span>
+      @for (folder of config.folders; track folder) {
+        <button
+          class="im-folder-btn"
+          [class.im-folder-btn--active]="selectedFolder() === folder"
+          (click)="setFolder(folder)"
+          [attr.aria-pressed]="selectedFolder() === folder"
+        >{{ folderLabelKeys[folder] | translate }}</button>
+      }
+    </div>
+
+    <!-- Action buttons -->
+    <div class="im-toolbar__actions">
+      <button
+        class="im-btn im-btn--secondary"
+        (click)="openFilePicker(false)"
+        [attr.aria-label]="'IMAGE_MANAGER.ARIA_SINGLE' | translate"
+        [title]="'IMAGE_MANAGER.BTN_SINGLE' | translate"
+      >
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/>
+        </svg>
+        {{ 'IMAGE_MANAGER.BTN_SINGLE' | translate }}
+      </button>
+
+      <button
+        class="im-btn im-btn--secondary"
+        (click)="openFilePicker(true)"
+        [attr.aria-label]="'IMAGE_MANAGER.ARIA_MULTIPLE' | translate"
+        [title]="'IMAGE_MANAGER.BTN_MULTIPLE' | translate"
+      >
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <rect x="2" y="6" width="20" height="14" rx="2"/>
+          <path d="M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/>
+          <line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/>
+        </svg>
+        {{ 'IMAGE_MANAGER.BTN_MULTIPLE' | translate }}
+      </button>
+
+      @if (canUploadAll()) {
+        <button
+          class="im-btn im-btn--primary"
+          (click)="uploadAll()"
+          [disabled]="isUploadingAll()"
+          [attr.aria-label]="'IMAGE_MANAGER.ARIA_UPLOAD_ALL' | translate"
+        >
+          @if (isUploadingAll()) {
+            <span class="im-spinner" aria-hidden="true"></span>
+            {{ 'IMAGE_MANAGER.BTN_UPLOADING' | translate }}
+          } @else {
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <polyline points="16 16 12 12 8 16"/>
+              <line x1="12" y1="12" x2="12" y2="21"/>
+              <path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/>
+            </svg>
+            {{ 'IMAGE_MANAGER.BTN_UPLOAD_ALL' | translate }}
+            <span class="im-btn__badge">{{ pendingCount() }}</span>
+          }
+        </button>
+      }
+
+      @if (successCount() > 0 && !isUploadingAll()) {
+        <button
+          class="im-btn im-btn--ghost"
+          (click)="clearCompleted()"
+          [attr.aria-label]="'IMAGE_MANAGER.ARIA_CLEAR_DONE' | translate"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          {{ 'IMAGE_MANAGER.BTN_CLEAR_DONE' | translate }}
+        </button>
+      }
+
+      @if (hasFiles()) {
+        <button
+          class="im-btn im-btn--danger-ghost"
+          (click)="clearAll()"
+          [attr.aria-label]="'IMAGE_MANAGER.ARIA_CLEAR_ALL' | translate"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6m4-6v6"/><path d="M9 6V4h6v2"/>
+          </svg>
+          {{ 'IMAGE_MANAGER.BTN_CLEAR_ALL' | translate }}
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- ══════════════════════════ DROP ZONE ════════════════════════════════ -->
+  <div
+    class="im-dropzone"
+    [class.im-dropzone--active]="isDragOver()"
+    (dragover)="onDragOver($event)"
+    (dragleave)="onDragLeave($event)"
+    (drop)="onDrop($event)"
+    (click)="openFilePicker(true)"
+    (keydown.enter)="openFilePicker(true)"
+    (keydown.space)="$event.preventDefault(); openFilePicker(true)"
+    role="button"
+    tabindex="0"
+    [attr.aria-label]="isDragOver()
+      ? ('IMAGE_MANAGER.DROP_ARIA_ACTIVE' | translate)
+      : ('IMAGE_MANAGER.DROP_ARIA_IDLE'   | translate)"
+  >
+    <div class="im-dropzone__content">
+      <div class="im-dropzone__icon" aria-hidden="true">
+        @if (isDragOver()) {
+          <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="8" y="16" width="48" height="36" rx="4" stroke-dasharray="6 3"/>
+            <polyline points="24 28 32 20 40 28"/>
+            <line x1="32" y1="20" x2="32" y2="42"/>
+          </svg>
+        } @else {
+          <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.75">
+            <path d="M48 40c3.3-1.3 5.5-4.5 5.5-8 0-4.7-3.8-8.5-8.5-8.5h-2A16 16 0 1016 40"/>
+            <polyline points="24 34 32 26 40 34"/>
+            <line x1="32" y1="26" x2="32" y2="50"/>
+          </svg>
+        }
+      </div>
+
+      <p class="im-dropzone__title">
+        {{ (isDragOver() ? 'IMAGE_MANAGER.DROP_RELEASE' : 'IMAGE_MANAGER.DROP_TITLE') | translate }}
+      </p>
+      <p class="im-dropzone__subtitle">{{ 'IMAGE_MANAGER.DROP_SUBTITLE' | translate }}</p>
+      <p class="im-dropzone__meta">
+        {{ 'IMAGE_MANAGER.DROP_META' | translate: { maxSize: 15, maxCount: config.maxFiles } }}
+      </p>
+    </div>
+  </div>
+
+  <!-- ═════════════════════════ FILE QUEUE ════════════════════════════════ -->
+  @if (hasFiles()) {
+
+    <div class="im-queue-header">
+      <span class="im-queue-header__info">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+        </svg>
+        {{ (totalCount() === 1
+              ? 'IMAGE_MANAGER.QUEUE_FILES_ONE'
+              : totalCount() < 5
+                ? 'IMAGE_MANAGER.QUEUE_FILES_FEW'
+                : 'IMAGE_MANAGER.QUEUE_FILES_MANY') | translate: { count: totalCount() } }}
+        &nbsp;·&nbsp; {{ formatSize(totalSize()) }}
+      </span>
+    </div>
+
+    <div class="im-grid" role="list" [attr.aria-label]="'IMAGE_MANAGER.ARIA_QUEUE' | translate">
+      @for (file of queue(); track file.id) {
+        <article
+          class="im-card"
+          [class.im-card--success]="file.status === 'success'"
+          [class.im-card--error]="file.status === 'error'"
+          [class.im-card--uploading]="file.status === 'uploading'"
+          role="listitem"
+          [attr.aria-label]="file.file.name"
+        >
+          <!-- ── Preview ── -->
+          <div class="im-card__preview">
+            <img
+              [src]="file.previewUrl"
+              [alt]="file.file.name"
+              loading="lazy"
+              class="im-card__img"
+            />
+
+            <!-- Status badge -->
+            <div class="im-card__badge" [class]="'im-card__badge--' + file.status">
+              @switch (file.status) {
+                @case ('pending') {
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M12 22a10 10 0 110-20 10 10 0 010 20zm1-10V7a1 1 0 10-2 0v6a1 1 0 00.3.7l3 3a1 1 0 001.4-1.4L13 12z"/>
+                  </svg>
+                  {{ 'IMAGE_MANAGER.BADGE_PENDING' | translate }}
+                }
+                @case ('uploading') {
+                  <span class="im-spinner im-spinner--sm" aria-hidden="true"></span>
+                  {{ file.progress }}%
+                }
+                @case ('success') {
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  {{ 'IMAGE_MANAGER.BADGE_DONE' | translate }}
+                }
+                @case ('error') {
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                  {{ 'IMAGE_MANAGER.BADGE_ERROR' | translate }}
+                }
+              }
+            </div>
+
+            <!-- Progress bar -->
+            @if (file.status === 'uploading') {
+              <div
+                class="im-card__progress"
+                role="progressbar"
+                [attr.aria-valuenow]="file.progress"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                [attr.aria-label]="file.file.name + ': ' + file.progress + '%'"
+              >
+                <div class="im-card__progress-fill" [style.width.%]="file.progress"></div>
+              </div>
+            }
+
+            <!-- Delete button -->
+            <button
+              class="im-card__delete"
+              (click)="$event.stopPropagation(); removeFile(file.id)"
+              [disabled]="file.status === 'uploading'"
+              [attr.aria-label]="file.file.name"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- ── Body ── -->
+          <div class="im-card__body">
+            <p class="im-card__name" [title]="file.file.name">{{ file.file.name }}</p>
+            <p class="im-card__meta">{{ formatSize(file.file.size) }} · {{ (file.file.type.split('/')[1] || '').toUpperCase() }}</p>
+
+            @if (file.status === 'error' && file.errorMessage) {
+              <p class="im-card__error-msg" [title]="file.errorMessage">{{ file.errorMessage }}</p>
+            }
+
+            <!-- Action row -->
+            <div class="im-card__actions">
+              @switch (file.status) {
+                @case ('pending') {
+                  <button
+                    class="im-card-btn im-card-btn--upload"
+                    (click)="uploadFile(file)"
+                    [disabled]="isUploadingAll()"
+                    [attr.aria-label]="'IMAGE_MANAGER.BTN_UPLOAD_FILE' | translate"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/>
+                      <path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/>
+                    </svg>
+                    {{ 'IMAGE_MANAGER.BTN_UPLOAD_FILE' | translate }}
+                  </button>
+                }
+                @case ('success') {
+                  @if (file.uploadedUrl) {
+                    <button
+                      class="im-card-btn im-card-btn--copy"
+                      (click)="copyUrl(file.uploadedUrl!)"
+                      [attr.aria-label]="'IMAGE_MANAGER.BTN_COPY_URL' | translate"
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                      </svg>
+                      {{ 'IMAGE_MANAGER.BTN_COPY_URL' | translate }}
+                    </button>
+                  }
+                }
+                @case ('error') {
+                  <button
+                    class="im-card-btn im-card-btn--retry"
+                    (click)="retryFile(file.id)"
+                    [attr.aria-label]="'IMAGE_MANAGER.BTN_RETRY' | translate"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <polyline points="1 4 1 10 7 10"/>
+                      <path d="M3.51 15a9 9 0 102.13-9.36L1 10"/>
+                    </svg>
+                    {{ 'IMAGE_MANAGER.BTN_RETRY' | translate }}
+                  </button>
+                }
+                @case ('uploading') {
+                  <span class="im-card__uploading-label">
+                    <span class="im-spinner im-spinner--xs" aria-hidden="true"></span>
+                    {{ 'IMAGE_MANAGER.BTN_UPLOADING' | translate }}
+                  </span>
+                }
+              }
+            </div>
+          </div>
+        </article>
+      }
+    </div>
+
+  } @else {
+
+    <!-- ═══════════════════════ EMPTY STATE ══════════════════════════════ -->
+    <div class="im-empty">
+      <div class="im-empty__illustration" aria-hidden="true">
+        <svg viewBox="0 0 200 180" fill="none">
+          <rect x="20" y="30" width="160" height="120" rx="16" fill="currentColor" opacity=".06"/>
+          <rect x="30" y="45" width="100" height="70" rx="10" fill="currentColor" opacity=".1"/>
+          <rect x="38" y="53" width="84" height="54" rx="7" fill="currentColor" opacity=".1"/>
+          <circle cx="58" cy="72" r="8" fill="currentColor" opacity=".2"/>
+          <path d="M38 97 L58 76 L75 90 L90 74 L122 97Z" fill="currentColor" opacity=".2"/>
+          <rect x="90" y="55" width="80" height="58" rx="10" fill="currentColor" opacity=".12"/>
+          <rect x="98" y="63" width="64" height="42" rx="7" fill="currentColor" opacity=".1"/>
+          <circle cx="115" cy="79" r="6" fill="currentColor" opacity=".2"/>
+          <path d="M98 99L115 80 L130 92 L154 99Z" fill="currentColor" opacity=".2"/>
+          <circle cx="100" cy="145" r="20" fill="currentColor" opacity=".08"/>
+          <path d="M100 155V138M93 144l7-7 7 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity=".4"/>
+        </svg>
+      </div>
+      <h3 class="im-empty__title">{{ 'IMAGE_MANAGER.EMPTY_TITLE' | translate }}</h3>
+      <p class="im-empty__subtitle">{{ 'IMAGE_MANAGER.EMPTY_SUBTITLE' | translate }}</p>
+      <div class="im-empty__actions">
+        <button class="im-btn im-btn--primary im-btn--lg" (click)="openFilePicker(true)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/>
+            <path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/>
+          </svg>
+          {{ 'IMAGE_MANAGER.BTN_SELECT_FILES' | translate }}
+        </button>
+      </div>
+    </div>
+
+  }
+
+</div>

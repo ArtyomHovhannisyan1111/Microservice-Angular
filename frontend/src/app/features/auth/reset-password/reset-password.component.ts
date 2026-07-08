@@ -4,13 +4,14 @@ import { ReactiveFormsModule, FormBuilder, Validators, AbstractControl } from '@
 import { RouterLink, ActivatedRoute, Router } from '@angular/router';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { TranslateModule } from '@ngx-translate/core';
 
 const AUTH_URL = 'http://localhost:8091';
 
 @Component({
   selector: 'app-reset-password',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, TranslateModule],
   template: `
     <div class="min-h-[calc(100vh-8rem)] flex items-center justify-center py-12">
       <div class="w-full max-w-md">
@@ -24,8 +25,8 @@ const AUTH_URL = 'http://localhost:8091';
                     d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
             </svg>
           </div>
-          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Новый пароль</h1>
-          <p class="text-gray-500 dark:text-gray-400 mt-1">Придумайте надёжный пароль</p>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ 'AUTH.NEW_PASSWORD' | translate }}</h1>
+          <p class="text-gray-500 dark:text-gray-400 mt-1">{{ 'AUTH.STRONG_PASSWORD' | translate }}</p>
         </div>
 
         <div class="card p-8">
@@ -39,11 +40,11 @@ const AUTH_URL = 'http://localhost:8091';
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                 </svg>
               </div>
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Пароль изменён!</h2>
+              <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">{{ 'AUTH.PASSWORD_CHANGED' | translate }}</h2>
               <p class="text-gray-500 dark:text-gray-400 text-sm mb-6">
-                Перенаправляем на страницу входа...
+                {{ 'AUTH.REDIRECTING' | translate }}
               </p>
-              <a routerLink="/auth/login" class="btn-primary inline-block">Войти</a>
+              <a routerLink="/auth/login" class="btn-primary inline-block">{{ 'NAV.LOGIN' | translate }}</a>
             </div>
 
           } @else if (invalidToken()) {
@@ -55,12 +56,12 @@ const AUTH_URL = 'http://localhost:8091';
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
               </div>
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Ссылка недействительна</h2>
+              <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">{{ 'AUTH.INVALID_LINK' | translate }}</h2>
               <p class="text-gray-500 dark:text-gray-400 text-sm mb-6">
-                Ссылка для сброса пароля устарела или уже использована.
+                {{ 'AUTH.EXPIRED_LINK' | translate }}
               </p>
               <a routerLink="/auth/forgot-password" class="btn-primary inline-block">
-                Запросить новую ссылку
+                {{ 'AUTH.SEND_LINK' | translate }}
               </a>
             </div>
 
@@ -70,11 +71,11 @@ const AUTH_URL = 'http://localhost:8091';
               <!-- New password -->
               <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                  Новый пароль
+                  {{ 'AUTH.NEW_PASSWORD' | translate }}
                 </label>
                 <div class="relative">
                   <input formControlName="password" [type]="showPass() ? 'text' : 'password'"
-                         placeholder="Минимум 6 символов"
+                         [placeholder]="'AUTH.MIN_6_CHARS' | translate"
                          class="input-field pr-12"
                          [class.border-red-500]="f['password'].invalid && f['password'].touched">
                   <button type="button" (click)="toggleShowPass()"
@@ -94,21 +95,21 @@ const AUTH_URL = 'http://localhost:8091';
                   </button>
                 </div>
                 @if (f['password'].invalid && f['password'].touched) {
-                  <p class="text-red-500 text-xs mt-1">Минимум 6 символов</p>
+                  <p class="text-red-500 text-xs mt-1">{{ 'AUTH.MIN_6_CHARS' | translate }}</p>
                 }
               </div>
 
               <!-- Confirm password -->
               <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                  Подтверждение пароля
+                  {{ 'AUTH.CONFIRM_NEW_PASSWORD' | translate }}
                 </label>
                 <input formControlName="confirm" [type]="showPass() ? 'text' : 'password'"
-                       placeholder="Повторите пароль"
+                       [placeholder]="'AUTH.CONFIRM_PASSWORD' | translate"
                        class="input-field"
                        [class.border-red-500]="form.hasError('mismatch') && f['confirm'].touched">
                 @if (form.hasError('mismatch') && f['confirm'].touched) {
-                  <p class="text-red-500 text-xs mt-1">Пароли не совпадают</p>
+                  <p class="text-red-500 text-xs mt-1">{{ 'AUTH.PASSWORDS_DONT_MATCH' | translate }}</p>
                 }
               </div>
 
@@ -127,7 +128,7 @@ const AUTH_URL = 'http://localhost:8091';
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
                   </svg>
                 }
-                {{ loading() ? 'Сохранение...' : 'Сохранить пароль' }}
+                {{ (loading() ? 'AUTH.SAVING' : 'AUTH.NEW_PASSWORD') | translate }}
               </button>
             </form>
           }

@@ -6,6 +6,9 @@
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
 
     <changeSet id="1" author="tsyom">
+        <preConditions onFail="MARK_RAN">
+            <not><tableExists tableName="orders"/></not>
+        </preConditions>
         <createTable tableName="orders">
             <column name="id" type="SERIAL">
                 <constraints primaryKey="true" nullable="false"/>

@@ -13,7 +13,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
     show-sql: false
     properties:
       hibernate:
@@ -29,8 +29,3 @@ spring:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 
-    consumer:
-      group-id: order-group
-      auto-offset-reset: earliest
-      key-deserializer: org.apache.kafka.common.serialization.IntegerDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer

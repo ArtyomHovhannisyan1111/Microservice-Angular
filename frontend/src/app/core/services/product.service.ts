@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, catchError, of } from 'rxjs';
+import { Observable, catchError, map, of } from 'rxjs';
 import { Product } from '../models/product.model';
 import { API_BASE_URL } from '../tokens/api.token';
 
@@ -20,12 +20,12 @@ export class ProductService {
   private readonly http    = inject(HttpClient);
   private readonly baseUrl = inject(API_BASE_URL);
 
-  /** Admin-added products (before backend persists them) */
   private localProducts: Product[] = [];
 
   getProducts(category?: string): Observable<Product[]> {
     const params: Record<string, string> = category ? { category } : {};
-    return this.http.get<Product[]>(`${this.baseUrl}/api/v1/products`, { params }).pipe(
+    return this.http.get<any[]>(`${this.baseUrl}/api/products`, { params }).pipe(
+      map(items => items.map(p => this.normalize(p))),
       catchError(() => {
         const all = [...MOCK_PRODUCTS, ...this.localProducts];
         return of(category ? all.filter(p => p.category === category) : all);
@@ -34,13 +34,29 @@ export class ProductService {
   }
 
   getProduct(id: string): Observable<Product | undefined> {
-    return this.http.get<Product>(`${this.baseUrl}/api/v1/products/${id}`).pipe(
+    return this.http.get<any>(`${this.baseUrl}/api/products/${id}`).pipe(
+      map(p => this.normalize(p)),
       catchError(() => of([...MOCK_PRODUCTS, ...this.localProducts].find(p => p.id === id)))
     );
   }
 
+  private normalize(p: any): Product {
+    return {
+      id:          String(p.id),
+      name:        p.name ?? '',
+      description: p.description ?? p.name ?? '',
+      price:       p.price ?? 0,
+      imageUrl:    p.imageUrl ?? p.image,
+      image:       p.image,
+      category:    p.category ?? 'Товары',
+      rating:      p.rating ?? 4.0,
+      stock:       p.stock ?? p.quantity ?? 0,
+    };
+  }
+
   createProduct(data: Omit<Product, 'id'>): Observable<Product> {
-    return this.http.post<Product>(`${this.baseUrl}/api/v1/products`, data).pipe(
+    const body = { ...data, quantity: data.stock };
+    return this.http.post<Product>(`${this.baseUrl}/api/products`, body).pipe(
       catchError(() => {
         const product: Product = { ...data, id: `local-${Date.now()}` };
         this.localProducts.push(product);
@@ -50,11 +66,29 @@ export class ProductService {
   }
 
   deleteProduct(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/api/v1/products/${id}`).pipe(
+    return this.http.delete<void>(`${this.baseUrl}/api/products/${id}`).pipe(
       catchError(() => {
         this.localProducts = this.localProducts.filter(p => p.id !== id);
         return of(undefined);
       })
+    );
+  }
+
+  getProductsPaged(page: number, size = 10, search = '', category = ''): Observable<{ items: Product[]; totalPages: number; totalElements: number }> {
+    const params: Record<string, string> = { page: String(page), size: String(size) };
+    if (search.trim())   params['name']     = search.trim();
+    if (category.trim()) params['category'] = category.trim();
+    return this.http.get<any>(`${this.baseUrl}/api/products/page`, { params }).pipe(
+      map(res => ({
+        items: (res.content as any[]).map(p => this.normalize(p)),
+        totalPages: res.totalPages,
+        totalElements: res.totalElements
+      })),
+      catchError(() => of({
+        items: MOCK_PRODUCTS,
+        totalPages: 1,
+        totalElements: MOCK_PRODUCTS.length
+      }))
     );
   }
 

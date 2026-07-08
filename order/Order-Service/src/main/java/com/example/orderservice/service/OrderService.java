@@ -7,19 +7,21 @@ import com.example.orderservice.Dto.StockUpdateRequest;
 import com.example.orderservice.Repository.OrderRepository;
 import com.example.orderservice.client.NotificationFeignClient;
 import com.example.orderservice.client.ProductFeignClient;
+import com.example.orderservice.client.UserServiceClient;
 import com.example.orderservice.exception.ResourceNotFoundException;
 import com.example.orderservice.mapper.OrderMapper;
 import com.example.orderservice.model.Order;
 import com.example.orderservice.model.OrderStatus;
 import com.example.orderservice.util.OrderValidationUtil;
+import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -29,27 +31,84 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final ProductFeignClient productFeignClient;
     private final NotificationFeignClient notificationFeignClient;
-    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final UserServiceClient userServiceClient;
+    private final RequestLogService requestLogService;
 
-    @Transactional
+    // noRollbackFor: when balance is insufficient we commit the CANCELLED order record before propagating the exception
+    @Transactional(rollbackFor = Exception.class, noRollbackFor = IllegalArgumentException.class)
     public Order createOrder(OrderRequest request) {
+        if (requestLogService.isDuplicate(request.getRequestId())) {
+            log.warn("Duplicate request detected: {}", request.getRequestId());
+            throw new IllegalStateException("Duplicate request: " + request.getRequestId());
+        }
+
         ProductResponse product = productFeignClient.getProduct(request.getProductId());
         OrderValidationUtil.validateProduct(product);
+        OrderValidationUtil.validateStock(product, request.getQuantity());
 
-        Order order = OrderMapper.toEntity(request);
-        order.setStatus(OrderStatus.APPROVED);
-        order.setTotalPrice(product.getPrice().multiply(BigDecimal.valueOf(request.getQuantity())));
+        BigDecimal total = product.getPrice().multiply(BigDecimal.valueOf(request.getQuantity()));
+        productFeignClient.decreaseStock(request.getProductId(), new StockUpdateRequest(request.getQuantity()));
 
-        order = orderRepository.save(order);
+        try {
+            userServiceClient.deductBalance(request.getUserId(), Map.of("amount", total));
+        } catch (FeignException e) {
+            productFeignClient.increaseStock(request.getProductId(), new StockUpdateRequest(request.getQuantity()));
 
-        productFeignClient.decreaseStock(order.getProductId(), new StockUpdateRequest(order.getQuantity()));
+            if (e.status() == 400) {
+                // Insufficient funds: save CANCELLED order for history, send cancel email
+                Order cancelled = OrderMapper.toEntity(request);
+                cancelled.setStatus(OrderStatus.CANCELLED);
+                cancelled.setTotalPrice(total);
+                Order savedCancelled = orderRepository.save(cancelled);
+                log.warn("Order {} cancelled — insufficient balance for userId={}", savedCancelled.getId(), request.getUserId());
 
-        kafkaTemplate.send("order-topic", OrderMapper.toEvent(order));
-        return order;
+                sendCancellationNotification(savedCancelled, request);
+
+                throw new IllegalArgumentException("Недостаточно средств на балансе");
+            }
+
+            log.error("User service call failed: status={}, msg={}", e.status(), e.getMessage());
+            throw new IllegalStateException("Сервис оплаты недоступен. Попробуйте позже.");
+        }
+
+        try {
+            Order order = OrderMapper.toEntity(request);
+            order.setStatus(OrderStatus.PENDING);
+            order.setTotalPrice(total);
+            Order saved = orderRepository.save(order);
+            requestLogService.logRequest(request.getRequestId());
+            log.info("Order created: id={}, userId={}, productId={}, total={}",
+                    saved.getId(), saved.getUserId(), saved.getProductId(), saved.getTotalPrice());
+            return saved;
+        } catch (Exception e) {
+            log.error("Order save failed after balance deduction, restoring stock: {}", e.getMessage());
+            productFeignClient.increaseStock(request.getProductId(), new StockUpdateRequest(request.getQuantity()));
+            throw e;
+        }
+    }
+
+    private void sendCancellationNotification(Order order, OrderRequest request) {
+        try {
+            notificationFeignClient.cancelOrder(
+                    NotificationConfirmRequest.builder()
+                            .orderId(order.getId().longValue())
+                            .userId(request.getUserId() != null ? request.getUserId().longValue() : 0L)
+                            .userEmail(request.getUserEmail())
+                            .userName(request.getUserName() != null ? request.getUserName() : "Покупатель")
+                            .totalPrice(order.getTotalPrice())
+                            .build()
+            );
+        } catch (Exception e) {
+            log.warn("Failed to send cancellation notification for order {}: {}", order.getId(), e.getMessage());
+        }
     }
 
     public List<Order> getAllOrders() {
         return orderRepository.findAll();
+    }
+
+    public List<Order> getOrdersByUserId(Integer userId) {
+        return orderRepository.findByUserId(userId);
     }
 
     public Order getOrderById(Integer id) {
@@ -80,12 +139,12 @@ public class OrderService {
 
         try {
             NotificationConfirmRequest req = NotificationConfirmRequest.builder()
-                .orderId(Long.valueOf(id))
-                .userId(order.getUserId() != null ? Long.valueOf(order.getUserId()) : 0L)
-                .userEmail(userEmail)
-                .totalPrice(order.getTotalPrice() != null ? order.getTotalPrice() : BigDecimal.ZERO)
-                .userName(userName != null ? userName : "Покупатель")
-                .build();
+                    .orderId(Long.valueOf(id))
+                    .userId(order.getUserId() != null ? Long.valueOf(order.getUserId()) : 0L)
+                    .userEmail(userEmail)
+                    .totalPrice(order.getTotalPrice() != null ? order.getTotalPrice() : BigDecimal.ZERO)
+                    .userName(userName != null ? userName : "Покупатель")
+                    .build();
             notificationFeignClient.confirmOrder(req);
         } catch (Exception e) {
             log.warn("Failed to send confirmation notification for order {}: {}", id, e.getMessage());

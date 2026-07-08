@@ -11,6 +11,8 @@ public class ProductMapper {
                 .name(normalizedName)
                 .price(productRequest.getPrice())
                 .quantity(productRequest.getQuantity())
+                .imageUrl(productRequest.getImageUrl())
+                .category(productRequest.getCategory())
                 .build();
     }
 }

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
+import { TranslateModule } from '@ngx-translate/core';
 import { OrderService } from '../../../core/services/order.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { Order, OrderStatus } from '../../../core/models/order.model';
@@ -10,7 +11,7 @@ import { Order, OrderStatus } from '../../../core/models/order.model';
 @Component({
   selector: 'app-admin-orders',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule],
+  imports: [CommonModule, RouterLink, FormsModule, TranslateModule],
   template: `
     <!-- ══════════════════════════════════════════════════════════════════════ -->
     <!--  ADMIN ORDERS PAGE — без корзины, только управление заказами          -->
@@ -23,14 +24,14 @@ import { Order, OrderStatus } from '../../../core/models/order.model';
           <nav class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-1">
             <a routerLink="/admin"
                class="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
-              Панель администратора
+              {{ 'ADMIN.TITLE' | translate }}
             </a>
             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
             </svg>
-            <span class="text-gray-900 dark:text-white font-medium">Управление заказами</span>
+            <span class="text-gray-900 dark:text-white font-medium">{{ 'ADMIN_ORDERS.SUBTITLE' | translate }}</span>
           </nav>
-          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Заказы пользователей</h1>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ 'ADMIN_ORDERS.USER_ORDERS' | translate }}</h1>
         </div>
 
         <!-- Кнопка обновить -->
@@ -43,20 +44,20 @@ import { Order, OrderStatus } from '../../../core/models/order.model';
                   d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0
                      0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
           </svg>
-          Обновить
+          {{ 'COMMON.REFRESH' | translate }}
         </button>
       </div>
 
       <!-- Карточки-статистика -->
       <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-8">
-        @for (s of stats(); track s.label) {
+        @for (s of stats(); track s.labelKey) {
           <button
             (click)="setStatusFilter(s.filter)"
             class="card p-4 text-center cursor-pointer transition-all duration-200 hover:shadow-md"
             [class.ring-2]="statusFilter() === s.filter"
             [class.ring-primary-500]="statusFilter() === s.filter">
             <p class="text-2xl font-bold {{ s.color }}">{{ s.value }}</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-tight">{{ s.label }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-tight">{{ s.labelKey | translate }}</p>
           </button>
         }
       </div>
@@ -73,7 +74,7 @@ import { Order, OrderStatus } from '../../../core/models/order.model';
             [ngModel]="searchQuery()"
             (ngModelChange)="searchQuery.set($event)"
             type="text"
-            placeholder="Поиск по ID, имени или email..."
+            [placeholder]="'ADMIN_ORDERS.SEARCH' | translate"
             class="input-field pl-10">
         </div>
 
@@ -85,7 +86,7 @@ import { Order, OrderStatus } from '../../../core/models/order.model';
                     [class]="statusFilter() === opt.value
                       ? 'bg-primary-600 text-white shadow-sm'
                       : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-primary-400'">
-              {{ opt.label }}
+              {{ opt.labelKey | translate }}
             </button>
           }
         </div>
@@ -100,7 +101,7 @@ import { Order, OrderStatus } from '../../../core/models/order.model';
                   d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
           </svg>
           {{ error() }}
-          <button (click)="loadOrders()" class="ml-auto underline hover:no-underline">Повторить</button>
+          <button (click)="loadOrders()" class="ml-auto underline hover:no-underline">{{ 'COMMON.RETRY' | translate }}</button>
         </div>
       }
 
@@ -113,7 +114,7 @@ import { Order, OrderStatus } from '../../../core/models/order.model';
               <tr>
                 @for (h of tableHeaders; track h) {
                   <th class="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-300">
-                    {{ h }}
+                    {{ h | translate }}
                   </th>
                 }
               </tr>
@@ -142,11 +143,11 @@ import { Order, OrderStatus } from '../../../core/models/order.model';
                   d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9
                      5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
           </svg>
-          <p class="font-semibold text-gray-700 dark:text-gray-300 mb-2">Заказы не найдены</p>
-          <p class="text-sm text-gray-500 dark:text-gray-400">Попробуйте изменить фильтр или поисковый запрос</p>
+          <p class="font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ 'ADMIN_ORDERS.NO_ORDERS' | translate }}</p>
+          <p class="text-sm text-gray-500 dark:text-gray-400">{{ 'ADMIN_ORDERS.CHANGE_FILTER' | translate }}</p>
           <button (click)="resetFilters()"
                   class="mt-4 text-primary-600 dark:text-primary-400 text-sm hover:underline">
-            Сбросить фильтры
+            {{ 'ADMIN_ORDERS.RESET_FILTERS' | translate }}
           </button>
         </div>
 
@@ -190,7 +191,7 @@ import { Order, OrderStatus } from '../../../core/models/order.model';
                         </div>
                         <div class="min-w-0">
                           <p class="font-medium text-gray-900 dark:text-white truncate max-w-[140px]">
-                            {{ order.shippingAddress.fullName }}
+                            {{ order.userName ?? ('Пользователь #' + order.userId) }}
                           </p>
                           @if (order.userEmail) {
                             <p class="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[140px]">
@@ -198,28 +199,24 @@ import { Order, OrderStatus } from '../../../core/models/order.model';
                             </p>
                           } @else {
                             <p class="text-xs text-gray-400 dark:text-gray-600">
-                              {{ order.shippingAddress.city }}
+                              ID: {{ order.userId }}
                             </p>
                           }
                         </div>
                       </div>
                     </td>
 
-                    <!-- Дата -->
+                    <!-- Товар -->
                     <td class="px-4 py-3.5 text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                      {{ order.createdAt | date:'dd.MM.yyyy' }}
+                      {{ 'ADMIN_ORDERS.PRODUCT_ITEM' | translate: { number: order.productId } }}
                       <br>
-                      <span class="text-xs">{{ order.createdAt | date:'HH:mm' }}</span>
+                      <span class="text-xs">{{ 'ADMIN_ORDERS.ITEM_COUNT' | translate: { count: order.quantity } }}</span>
                     </td>
 
                     <!-- Стоимость -->
                     <td class="px-4 py-3.5 whitespace-nowrap">
                       <span class="font-semibold text-gray-900 dark:text-white">
-                        {{ order.total | number:'1.0-0' }} ₽
-                      </span>
-                      <br>
-                      <span class="text-xs text-gray-400 dark:text-gray-500">
-                        {{ order.items.length }} {{ pluralItems(order.items.length) }}
+                        {{ order.totalPrice | number:'1.0-0' }} ₽
                       </span>
                     </td>
 
@@ -232,12 +229,12 @@ import { Order, OrderStatus } from '../../../core/models/order.model';
                                focus:outline-none focus:ring-2 focus:ring-primary-500
                                transition-colors duration-200"
                         [class]="orderService.getStatusColor(order.status)">
-                        <option value="pending"    [selected]="order.status === 'pending'">Ожидает</option>
-                        <option value="processing" [selected]="order.status === 'processing'">Обрабатывается</option>
-                        <option value="shipped"    [selected]="order.status === 'shipped'">Отправлен</option>
-                        <option value="delivered"  [selected]="order.status === 'delivered'">Доставлен</option>
-                        <option value="cancelled"  [selected]="order.status === 'cancelled'">Отменён</option>
-                        <option value="confirmed"  [selected]="order.status === 'confirmed'">Подтверждён</option>
+                        <option value="pending"    [selected]="order.status === 'pending'">{{ 'STATUS.PENDING'    | translate }}</option>
+                        <option value="processing" [selected]="order.status === 'processing'">{{ 'STATUS.PROCESSING' | translate }}</option>
+                        <option value="shipped"    [selected]="order.status === 'shipped'">{{ 'STATUS.SHIPPED'    | translate }}</option>
+                        <option value="delivered"  [selected]="order.status === 'delivered'">{{ 'STATUS.DELIVERED'  | translate }}</option>
+                        <option value="cancelled"  [selected]="order.status === 'cancelled'">{{ 'STATUS.CANCELLED'  | translate }}</option>
+                        <option value="confirmed"  [selected]="order.status === 'confirmed'">{{ 'STATUS.CONFIRMED'  | translate }}</option>
                       </select>
                     </td>
 
@@ -249,7 +246,7 @@ import { Order, OrderStatus } from '../../../core/models/order.model';
                           <button
                             (click)="confirmOrder(order)"
                             [disabled]="confirming() === order.id"
-                            title="Подтвердить заказ и отправить email"
+                            [title]="'ADMIN_ORDERS.CONFIRM_TOOLTIP' | translate"
                             class="flex items-center gap-1.5 text-xs font-medium text-teal-600
                                    hover:text-white hover:bg-teal-600 border border-teal-200
                                    dark:border-teal-700 hover:border-teal-600 px-2.5 py-1.5 rounded-lg
@@ -262,13 +259,13 @@ import { Order, OrderStatus } from '../../../core/models/order.model';
                                 <path class="opacity-75" fill="currentColor"
                                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
                               </svg>
-                              Отправка...
+                              {{ 'AUTH.SENDING' | translate }}
                             } @else {
                               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                       d="M5 13l4 4L19 7"/>
                               </svg>
-                              Подтвердить
+                              {{ 'ADMIN_ORDERS.CONFIRM_BTN' | translate }}
                             }
                           </button>
                         }
@@ -279,13 +276,13 @@ import { Order, OrderStatus } from '../../../core/models/order.model';
                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
-                            Email отправлен
+                            {{ 'ADMIN_ORDERS.EMAIL_SENT' | translate }}
                           </span>
                         }
 
                         <button
                           (click)="openDeleteModal(order)"
-                          title="Удалить заказ"
+                          [title]="'ADMIN_ORDERS.DELETE_TOOLTIP' | translate"
                           class="flex items-center gap-1.5 text-xs font-medium text-red-500
                                  hover:text-white hover:bg-red-500 border border-red-200 dark:border-red-800
                                  hover:border-red-500 px-2.5 py-1.5 rounded-lg
@@ -295,7 +292,7 @@ import { Order, OrderStatus } from '../../../core/models/order.model';
                                   d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5
                                      7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                           </svg>
-                          Удалить
+                          {{ 'ADMIN_ORDERS.DELETE_BTN' | translate }}
                         </button>
                       </div>
                     </td>
@@ -310,11 +307,11 @@ import { Order, OrderStatus } from '../../../core/models/order.model';
           <div class="px-4 py-3 bg-gray-50 dark:bg-gray-700/30 border-t border-gray-100
                       dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400 flex
                       items-center justify-between">
-            <span>Показано {{ filtered().length }} из {{ allOrders().length }} заказов</span>
+            <span>{{ 'COMMON.SHOW' | translate }} {{ filtered().length }} {{ 'COMMON.OF' | translate }} {{ allOrders().length }} {{ 'ADMIN_ORDERS.ORDERS_COUNT' | translate }}</span>
             @if (statusFilter() !== '' || searchQuery()) {
               <button (click)="resetFilters()"
                       class="text-primary-600 dark:text-primary-400 hover:underline">
-                Сбросить фильтры
+                {{ 'ADMIN_ORDERS.RESET_FILTERS' | translate }}
               </button>
             }
           </div>
@@ -353,10 +350,10 @@ import { Order, OrderStatus } from '../../../core/models/order.model';
               </div>
               <div>
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white">
-                  Удалить заказ?
+                  {{ 'ADMIN_ORDERS.DELETE_TITLE' | translate }}
                 </h3>
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  Это действие необратимо. Заказ будет удалён с сервера.
+                  {{ 'ADMIN_ORDERS.DELETE_TEXT' | translate }}
                 </p>
               </div>
             </div>
@@ -369,15 +366,15 @@ import { Order, OrderStatus } from '../../../core/models/order.model';
               <div class="flex items-center justify-between gap-3">
                 <div class="min-w-0">
                   <p class="font-mono text-sm font-semibold text-gray-900 dark:text-white">
-                    {{ order.id }}
+                    #{{ order.id }}
                   </p>
                   <p class="text-sm text-gray-600 dark:text-gray-300 mt-0.5">
-                    {{ order.shippingAddress.fullName }}
+                    {{ order.userName ?? ('Пользователь #' + order.userId) }}
                   </p>
                 </div>
                 <div class="text-right shrink-0">
                   <p class="font-bold text-gray-900 dark:text-white">
-                    {{ order.total | number:'1.0-0' }} ₽
+                    {{ order.totalPrice | number:'1.0-0' }} ₽
                   </p>
                   <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
                                {{ orderService.getStatusColor(order.status) }}">
@@ -394,7 +391,7 @@ import { Order, OrderStatus } from '../../../core/models/order.model';
               (click)="closeModal()"
               [disabled]="deleting()"
               class="btn-secondary px-5 py-2.5">
-              Отмена
+              {{ 'COMMON.CANCEL' | translate }}
             </button>
             <button
               (click)="confirmDelete()"
@@ -407,14 +404,14 @@ import { Order, OrderStatus } from '../../../core/models/order.model';
                   <path class="opacity-75" fill="currentColor"
                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
                 </svg>
-                Удаление...
+                {{ 'ADMIN_ORDERS.DELETING' | translate }}
               } @else {
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5
                            7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                 </svg>
-                Да, удалить
+                {{ 'ADMIN_ORDERS.YES_DELETE' | translate }}
               }
             </button>
           </div>
@@ -474,10 +471,10 @@ export class AdminOrdersComponent implements OnInit {
     const q = this.searchQuery().toLowerCase().trim();
     if (q) {
       list = list.filter(o =>
-        o.id.toLowerCase().includes(q) ||
-        o.shippingAddress.fullName.toLowerCase().includes(q) ||
+        o.id.toString().includes(q) ||
+        (o.userName ?? '').toLowerCase().includes(q) ||
         (o.userEmail ?? '').toLowerCase().includes(q) ||
-        o.shippingAddress.city.toLowerCase().includes(q)
+        o.userId.toString().includes(q)
       );
     }
     return list;
@@ -487,11 +484,11 @@ export class AdminOrdersComponent implements OnInit {
   readonly stats = computed(() => {
     const orders = this.allOrders();
     return [
-      { label: 'Все заказы',    value: orders.length,                                    color: 'text-gray-900 dark:text-white',          filter: '' as const },
-      { label: 'Ожидают',       value: orders.filter(o => o.status === 'pending').length,    color: 'text-yellow-600 dark:text-yellow-400', filter: 'pending' as const },
-      { label: 'В обработке',   value: orders.filter(o => o.status === 'processing').length, color: 'text-blue-600 dark:text-blue-400',    filter: 'processing' as const },
-      { label: 'Отправлено',    value: orders.filter(o => o.status === 'shipped').length,    color: 'text-purple-600 dark:text-purple-400', filter: 'shipped' as const },
-      { label: 'Доставлено',    value: orders.filter(o => o.status === 'delivered').length,  color: 'text-green-600 dark:text-green-400',  filter: 'delivered' as const },
+      { labelKey: 'ADMIN.TOTAL_ORDERS',  value: orders.length,                                    color: 'text-gray-900 dark:text-white',          filter: '' as const },
+      { labelKey: 'ADMIN.PENDING',        value: orders.filter(o => o.status === 'pending').length,    color: 'text-yellow-600 dark:text-yellow-400', filter: 'pending' as const },
+      { labelKey: 'STATUS.PROCESSING',    value: orders.filter(o => o.status === 'processing').length, color: 'text-blue-600 dark:text-blue-400',    filter: 'processing' as const },
+      { labelKey: 'STATUS.SHIPPED',       value: orders.filter(o => o.status === 'shipped').length,    color: 'text-purple-600 dark:text-purple-400', filter: 'shipped' as const },
+      { labelKey: 'ADMIN.DELIVERED',      value: orders.filter(o => o.status === 'delivered').length,  color: 'text-green-600 dark:text-green-400',  filter: 'delivered' as const },
     ];
   });
 
@@ -503,24 +500,25 @@ export class AdminOrdersComponent implements OnInit {
 
   // ─── Подтверждение заказа ─────────────────────────────────────────────────
 
-  readonly confirming         = signal<string | null>(null);
+  readonly confirming         = signal<number | null>(null);
   readonly confirmToastVisible = signal(false);
   readonly confirmToastMsg     = signal('');
   private confirmToastTimer?: ReturnType<typeof setTimeout>;
 
   // ─── UI-константы ─────────────────────────────────────────────────────────
 
-  readonly tableHeaders = ['ID заказа', 'Пользователь', 'Дата', 'Общая стоимость', 'Статус', 'Действия'];
+  readonly tableHeaders = ['ADMIN_ORDERS.COL_ID', 'ADMIN_ORDERS.COL_USER', 'ADMIN_ORDERS.COL_DATE',
+                           'ADMIN_ORDERS.COL_TOTAL', 'ADMIN.COL_STATUS', 'ADMIN_ORDERS.COL_ACTIONS'];
   readonly skeletonRows = [1, 2, 3, 4, 5];
 
-  readonly statusOptions: { label: string; value: OrderStatus | '' }[] = [
-    { label: 'Все',          value: '' },
-    { label: 'Ожидает',      value: 'pending' },
-    { label: 'Обработка',    value: 'processing' },
-    { label: 'Отправлен',    value: 'shipped' },
-    { label: 'Доставлен',    value: 'delivered' },
-    { label: 'Отменён',      value: 'cancelled' },
-    { label: 'Подтверждён',  value: 'confirmed' },
+  readonly statusOptions: { labelKey: string; value: OrderStatus | '' }[] = [
+    { labelKey: 'ADMIN_ORDERS.ALL',   value: '' },
+    { labelKey: 'STATUS.PENDING',     value: 'pending' },
+    { labelKey: 'STATUS.PROCESSING',  value: 'processing' },
+    { labelKey: 'STATUS.SHIPPED',     value: 'shipped' },
+    { labelKey: 'STATUS.DELIVERED',   value: 'delivered' },
+    { labelKey: 'STATUS.CANCELLED',   value: 'cancelled' },
+    { labelKey: 'STATUS.CONFIRMED',   value: 'confirmed' },
   ];
 
   // ─── Жизненный цикл ───────────────────────────────────────────────────────
@@ -577,7 +575,7 @@ export class AdminOrdersComponent implements OnInit {
         this.orderService.confirmOrder(
           order.id,
           order.userEmail ?? '',
-          order.shippingAddress.fullName
+          order.userName
         )
       );
       this.allOrders.update(list =>
@@ -633,13 +631,7 @@ export class AdminOrdersComponent implements OnInit {
   // ─── Утилиты ──────────────────────────────────────────────────────────────
 
   getInitial(order: Order): string {
-    const name = order.shippingAddress.fullName;
+    const name = order.userName;
     return name ? name.charAt(0).toUpperCase() : '?';
-  }
-
-  pluralItems(n: number): string {
-    if (n % 10 === 1 && n % 100 !== 11) return 'товар';
-    if ([2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100)) return 'товара';
-    return 'товаров';
   }
 }

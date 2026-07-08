@@ -30,6 +30,7 @@ services:
   db:
     image: postgres:15
     container_name: postgres_db
+    restart: always
     environment:
       POSTGRES_DB: microservice_db
       POSTGRES_USER: postgres
@@ -49,6 +50,7 @@ services:
   db-orders:
     image: postgres:15
     container_name: postgres_orders_db
+    restart: always
     environment:
       POSTGRES_DB: orders_db
       POSTGRES_USER: postgres
@@ -68,6 +70,7 @@ services:
   db-notifications:
     image: postgres:15
     container_name: postgres_notifications_db
+    restart: always
     environment:
       POSTGRES_DB: notifications_db
       POSTGRES_USER: postgres
@@ -87,6 +90,7 @@ services:
   db-auth:
     image: postgres:15
     container_name: postgres_auth_db
+    restart: always
     environment:
       POSTGRES_DB: auth_db
       POSTGRES_USER: postgres
@@ -99,6 +103,46 @@ services:
       - postgres-auth-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d auth_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  db-analytics:
+    image: postgres:15
+    container_name: postgres_analytics_db
+    restart: always
+    environment:
+      POSTGRES_DB: analytics_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5437:5432"
+    networks:
+      - ecommerce-network
+    volumes:
+      - postgres-analytics-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d analytics_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  db-users:
+    image: postgres:15
+    container_name: postgres_users_db
+    restart: always
+    environment:
+      POSTGRES_DB: users_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5436:5432"
+    networks:
+      - ecommerce-network
+    volumes:
+      - postgres-users-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d users_db"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -143,6 +187,8 @@ services:
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
       PRODUCT_SERVICE_URL: http://product-service:8080
+      USER_SERVICE_URL: http://user-service:8080
+      NOTIFICATION_SERVICE_URL: http://notification-service:8080
     restart: always
     networks:
       - ecommerce-network
@@ -188,6 +234,93 @@ services:
     networks:
       - ecommerce-network
 
+  user-service:
+    build:
+      context: ./user/user-service/user-service
+      dockerfile: ../../Dockerfile
+    container_name: user-service
+    depends_on:
+      db-users:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    ports:
+      - "8088:8080"
+    environment:
+      SERVER_PORT: 8080
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db-users:5432/users_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+    restart: always
+    networks:
+      - ecommerce-network
+
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ROOTUSER
+      MINIO_ROOT_PASSWORD: CHANGEME123
+    volumes:
+      - minio-data:/data
+    networks:
+      - ecommerce-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  image-service:
+    build:
+      context: ./image/image-service/image-service
+      dockerfile: ../../Dockerfile
+    container_name: image-service
+    depends_on:
+      minio:
+        condition: service_healthy
+    ports:
+      - "8083:8080"
+    environment:
+      SERVER_PORT: 8080
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: ROOTUSER
+      MINIO_SECRET_KEY: CHANGEME123
+      MINIO_BUCKET_NAME: order-images
+      MINIO_REGION: us-east-1
+    restart: always
+    networks:
+      - ecommerce-network
+
+  analytics-service:
+    build:
+      context: ./analytics/analytics-service
+      dockerfile: Dockerfile
+    container_name: analytics-service
+    depends_on:
+      db-analytics:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    ports:
+      - "8093:8080"
+    environment:
+      SERVER_PORT: 8080
+      DB_HOST: db-analytics
+      DB_USER: postgres
+      DB_PASS: postgres
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      ORDER_SERVICE_URL: http://order-service:8080
+      PRODUCT_SERVICE_URL: http://product-service:8080
+    restart: always
+    networks:
+      - ecommerce-network
+
   gateway-service:
     build:
       context: ./gateway/gateway-service
@@ -198,10 +331,61 @@ services:
       - product-service
       - order-service
       - notification-service
+      - user-service
+      - image-service
+      - analytics-service
+      - payment-service
     ports:
       - "8089:8080"
     environment:
       SERVER_PORT: 8080
+      PRODUCT_SERVICE_URL: http://product-service:8080
+      ORDER_SERVICE_URL: http://order-service:8080
+      AUTH_SERVICE_URL: http://auth-service:8080
+      NOTIFICATION_SERVICE_URL: http://notification-service:8080
+      USER_SERVICE_URL: http://user-service:8080
+      IMAGE_SERVICE_URL: http://image-service:8080
+      ANALYTICS_SERVICE_URL: http://analytics-service:8080
+      PAYMENT_SERVICE_URL: http://payment-service:8094
+    restart: always
+    networks:
+      - ecommerce-network
+
+  payment-db:
+    image: postgres:15
+    container_name: postgres_payment_db
+    restart: always
+    environment:
+      POSTGRES_DB: payment_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5438:5432"
+    networks:
+      - ecommerce-network
+    volumes:
+      - postgres-payment-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d payment_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  payment-service:
+    build:
+      context: ./payment/payment-service/Payment-Service
+      dockerfile: Dockerfile
+    container_name: payment-service
+    depends_on:
+      payment-db:
+        condition: service_healthy
+    ports:
+      - "8094:8094"
+    environment:
+      SERVER_PORT: 8094
+      SPRING_DATASOURCE_URL: jdbc:postgresql://payment-db:5432/payment_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
     restart: always
     networks:
       - ecommerce-network
@@ -215,4 +399,7 @@ volumes:
   postgres-orders-data:
   postgres-notifications-data:
   postgres-auth-data:
-
+  postgres-users-data:
+  postgres-analytics-data:
+  postgres-payment-data:
+  minio-data:

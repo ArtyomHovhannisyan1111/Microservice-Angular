@@ -1,0 +1,61 @@
+server:
+  port: 8096
+
+spring:
+  application:
+    name: analytics-service
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:5432/analytics_db
+    username: ${DB_USER:postgres}
+    password: ${DB_PASS:postgres}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.xml
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: analytics-group
+      auto-offset-reset: earliest
+      enable-auto-commit: true
+      auto-commit-interval-ms: 1000
+      max-poll-records: 100
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+        spring.json.value.default.type: com.example.analyticsservice.dto.OrderPlacedEvent
+        session.timeout.ms: 30000
+        heartbeat.interval.ms: 10000
+    producer:
+      acks: all
+      retries: 3
+    listener:
+      ack-mode: RECORD
+      poll-timeout: 3000
+      concurrency: 3
+
+analytics:
+  dashboard:
+    top-products-limit: 10
+
+services:
+  order:   ${ORDER_SERVICE_URL:http://localhost:8082}
+  product: ${PRODUCT_SERVICE_URL:http://localhost:8081}
+
+logging:
+  level:
+    com.example.analyticsservice: INFO
+    org.springframework.kafka: WARN

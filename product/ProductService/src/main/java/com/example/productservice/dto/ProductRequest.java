@@ -25,4 +25,7 @@ public class ProductRequest {
     @NotNull(message = "Quantity cannot be null")
     @Positive(message = "Quantity must be a positive number")
     private Integer quantity;
+
+    private String imageUrl;
+    private String category;
 }

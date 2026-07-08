@@ -2,6 +2,8 @@ package com.example.productservice.service;
 
 import com.example.productservice.config.KafkaTopicConfig;
 import com.example.productservice.dto.ProductRequest;
+import com.example.productservice.dto.ProductResponseDto;
+import com.example.productservice.exception.InsufficientStockException;
 import com.example.productservice.model.Product;
 import com.example.productservice.exception.ProductAlreadyExistsException;
 import com.example.productservice.exception.ProductNotFoundException;
@@ -9,6 +11,8 @@ import com.example.productservice.mapper.ProductMapper;
 import com.example.productservice.repository.ProductRepository;
 import com.example.productservice.util.ProductValidationUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,7 +22,6 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class ProductService {
-
     private final ProductRepository productRepository;
     private final KafkaTemplate<Integer, Object> kafkaTemplate;
 
@@ -64,6 +67,8 @@ public class ProductService {
         product.setName(normalizedName);
         product.setPrice(request.getPrice());
         product.setQuantity(request.getQuantity());
+        product.setImageUrl(request.getImageUrl());
+        product.setCategory(request.getCategory());
 
         Product updatedProduct = productRepository.save(product);
         publishProductEvent(updatedProduct);
@@ -123,4 +128,29 @@ public class ProductService {
     private Integer getCurrentStock(Product product) {
         return product.getQuantity() == null ? 0 : product.getQuantity();
     }
+    public Page<ProductResponseDto> getProducts(Long categoryId, String name, String category, Pageable pageable) {
+        boolean hasName = name != null && !name.isBlank();
+        boolean hasCat  = category != null && !category.isBlank();
+        Page<Product> productPage;
+        if (hasName && hasCat) {
+            productPage = productRepository.findByNameContainingIgnoreCaseAndCategory(name, category, pageable);
+        } else if (hasName) {
+            productPage = productRepository.findByNameContainingIgnoreCase(name, pageable);
+        } else if (hasCat) {
+            productPage = productRepository.findByCategory(category, pageable);
+        } else if (categoryId != null) {
+            productPage = productRepository.findByCategoryId(categoryId, pageable);
+        } else {
+            productPage = productRepository.findAll(pageable);
+        }
+        return productPage.map(product -> new ProductResponseDto(
+                product.getId(),
+                product.getName(),
+                product.getPrice(),
+                product.getImageUrl(),
+                product.getCategory(),
+                product.getQuantity()
+        ));
+    }
+
 }

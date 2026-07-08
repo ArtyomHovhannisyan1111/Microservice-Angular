@@ -54,13 +54,12 @@ public class AuthService {
             return ResponseEntity.status(401).body("Неверный логин или пароль");
         }
 
-        String token = jwtUtil.generateToken(user.getUsername(), user.getRole().name());
+        String token = jwtUtil.generateToken(user.getUsername(), user.getRole().name(), user.getId());
         return ResponseEntity.ok(token);
     }
 
     @Transactional
     public ResponseEntity<String> forgotPassword(ForgotPasswordRequest request) {
-        // Не раскрываем факт существования email (безопасность)
         if (userRepository.findByUsername(request.getUsername()).isEmpty()) {
             return ResponseEntity.ok("Если такой email зарегистрирован, на него отправлено письмо");
         }

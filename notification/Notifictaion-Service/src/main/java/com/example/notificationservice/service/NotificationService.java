@@ -34,6 +34,28 @@ public class NotificationService {
         notificationRepository.save(notification);
     }
 
+    public void cancelOrder(ConfirmOrderRequest request) {
+        if (request.getUserEmail() != null && !request.getUserEmail().isBlank()) {
+            emailService.sendOrderCancellationEmail(
+                request.getUserEmail(),
+                request.getOrderId(),
+                request.getTotalPrice() != null ? request.getTotalPrice() : BigDecimal.ZERO,
+                request.getUserName() != null ? request.getUserName() : "Покупатель"
+            );
+        }
+
+        Notification notification = Notification.builder()
+            .userId(request.getUserId() != null ? request.getUserId() : 0L)
+            .title("Заказ отменён")
+            .message("Ваш заказ #" + request.getOrderId() +
+                " на сумму " + request.getTotalPrice() + " ₽ отменён: недостаточно средств на балансе.")
+            .totalPrice(request.getTotalPrice() != null ? request.getTotalPrice() : BigDecimal.ZERO)
+            .isRead(false)
+            .build();
+
+        notificationRepository.save(notification);
+    }
+
     public void confirmOrder(ConfirmOrderRequest request) {
         if (request.getUserEmail() != null && !request.getUserEmail().isBlank()) {
             emailService.sendOrderConfirmationEmail(

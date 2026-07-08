@@ -1,12 +1,17 @@
 package com.example.productservice.controller;
 
 import com.example.productservice.dto.ProductRequest;
+import com.example.productservice.dto.ProductResponseDto;
 import com.example.productservice.dto.StockUpdateRequest;
-import com.example.productservice.service.ProductService;
 import com.example.productservice.model.Product;
+import com.example.productservice.service.ProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,7 +29,6 @@ import java.util.List;
 @RequestMapping("/api/products")
 @RequiredArgsConstructor
 public class ProductController {
-
     private final ProductService productService;
 
     @GetMapping
@@ -73,4 +77,13 @@ public class ProductController {
     public Product decreaseStock(@PathVariable Integer id, @Valid @RequestBody StockUpdateRequest request) {
         return productService.decreaseStock(id, request.getQuantity());
     }
+    @GetMapping("/page")
+    public ResponseEntity<Page<ProductResponseDto>> getProducts(
+        @RequestParam(required = false) Long categoryId,
+        @RequestParam(required = false) String name,
+        @RequestParam(required = false) String category,
+        @PageableDefault(size = 10, sort = "id") Pageable pageable) {
+        return ResponseEntity.ok(productService.getProducts(categoryId, name, category, pageable));
+    }
+
 }

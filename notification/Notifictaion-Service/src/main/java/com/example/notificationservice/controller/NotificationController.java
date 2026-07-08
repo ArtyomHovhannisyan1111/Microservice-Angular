@@ -43,4 +43,10 @@ public class NotificationController {
         notificationService.confirmOrder(request);
         return ResponseEntity.ok().build();
     }
+
+    @PostMapping("/cancel-order")
+    public ResponseEntity<Void> cancelOrder(@RequestBody ConfirmOrderRequest request) {
+        notificationService.cancelOrder(request);
+        return ResponseEntity.ok().build();
+    }
 }

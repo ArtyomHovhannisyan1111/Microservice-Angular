@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { RouterLink, Router } from '@angular/router';
+import { TranslateModule } from '@ngx-translate/core';
 import { AuthService } from '../../../core/services/auth.service';
 
 function passwordMatch(control: AbstractControl): ValidationErrors | null {
@@ -13,7 +14,7 @@ function passwordMatch(control: AbstractControl): ValidationErrors | null {
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, TranslateModule],
   template: `
     <div class="min-h-[calc(100vh-8rem)] flex items-center justify-center py-12">
       <div class="w-full max-w-md">
@@ -25,51 +26,51 @@ function passwordMatch(control: AbstractControl): ValidationErrors | null {
                     d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
             </svg>
           </div>
-          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Создать аккаунт</h1>
-          <p class="text-gray-500 dark:text-gray-400 mt-1">Зарегистрируйтесь, чтобы начать покупки</p>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ 'AUTH.CREATE_ACCOUNT' | translate }}</h1>
+          <p class="text-gray-500 dark:text-gray-400 mt-1">{{ 'AUTH.REGISTER_SUBTITLE' | translate }}</p>
         </div>
 
         <div class="card p-8">
           <form [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-5">
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Имя</label>
-              <input formControlName="name" type="text" placeholder="Иван Иванов"
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{{ 'AUTH.NAME' | translate }}</label>
+              <input formControlName="name" type="text" placeholder="Ivan Ivanov"
                      class="input-field"
                      [class.border-red-500]="f['name'].invalid && f['name'].touched">
               @if (f['name'].invalid && f['name'].touched) {
-                <p class="text-red-500 text-xs mt-1">Введите имя (минимум 2 символа)</p>
+                <p class="text-red-500 text-xs mt-1">{{ 'AUTH.NAME_MIN_2' | translate }}</p>
               }
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Email</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{{ 'AUTH.EMAIL' | translate }}</label>
               <input formControlName="email" type="email" placeholder="you@example.com"
                      class="input-field"
                      [class.border-red-500]="f['email'].invalid && f['email'].touched">
               @if (f['email'].invalid && f['email'].touched) {
-                <p class="text-red-500 text-xs mt-1">Введите корректный email</p>
+                <p class="text-red-500 text-xs mt-1">{{ 'AUTH.INVALID_EMAIL' | translate }}</p>
               }
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Пароль</label>
-              <input formControlName="password" type="password" placeholder="Минимум 6 символов"
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{{ 'AUTH.PASSWORD' | translate }}</label>
+              <input formControlName="password" type="password" [placeholder]="'AUTH.MIN_6_CHARS' | translate"
                      class="input-field"
                      [class.border-red-500]="f['password'].invalid && f['password'].touched">
               @if (f['password'].invalid && f['password'].touched) {
-                <p class="text-red-500 text-xs mt-1">Минимум 6 символов</p>
+                <p class="text-red-500 text-xs mt-1">{{ 'AUTH.MIN_6_CHARS' | translate }}</p>
               }
             </div>
 
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                Подтвердите пароль
+                {{ 'AUTH.CONFIRM_PASSWORD' | translate }}
               </label>
-              <input formControlName="confirmPassword" type="password" placeholder="Повторите пароль"
+              <input formControlName="confirmPassword" type="password" [placeholder]="'AUTH.CONFIRM_PASSWORD' | translate"
                      class="input-field"
                      [class.border-red-500]="form.hasError('passwordMismatch') && f['confirmPassword'].touched">
               @if (form.hasError('passwordMismatch') && f['confirmPassword'].touched) {
-                <p class="text-red-500 text-xs mt-1">Пароли не совпадают</p>
+                <p class="text-red-500 text-xs mt-1">{{ 'AUTH.PASSWORDS_DONT_MATCH' | translate }}</p>
               }
             </div>
 
@@ -88,15 +89,15 @@ function passwordMatch(control: AbstractControl): ValidationErrors | null {
                   <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
                 </svg>
               }
-              {{ loading() ? 'Регистрация...' : 'Зарегистрироваться' }}
+              {{ (loading() ? 'AUTH.REGISTERING' : 'AUTH.REGISTER_BTN') | translate }}
             </button>
           </form>
 
           <p class="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
-            Уже есть аккаунт?
+            {{ 'AUTH.ALREADY_HAVE_ACCOUNT' | translate }}
             <a routerLink="/auth/login"
                class="text-primary-600 dark:text-primary-400 font-medium hover:underline">
-              Войти
+              {{ 'NAV.LOGIN' | translate }}
             </a>
           </p>
         </div>

@@ -1,12 +1,12 @@
 server:
-  port: 8087
+  port: 8098
 
 spring:
   application:
     name: NotificationService
 
   datasource:
-    url: "${SPRING_DATASOURCE_URL:jdbc:postgresql://${SPRING_DATASOURCE_HOST:localhost}:${SPRING_DATASOURCE_PORT:5434}/${SPRING_DATASOURCE_DB:notifications_db}}"
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5434/notifications_db}
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
     password: ${SPRING_DATASOURCE_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
@@ -25,14 +25,20 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
+    username: javaai2026@gmail.com
+    password: "xqgu riev zykv wwew"
     properties:
       mail:
         smtp:
           auth: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+          ssl:
+            trust: smtp.gmail.com
           starttls:
             enable: true
+            required: true
 
   kafka:
     bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}

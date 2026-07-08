@@ -1,12 +1,15 @@
-import { Component } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { NavbarComponent } from './shared/components/navbar/navbar.component';
+import { ToastComponent } from './shared/components/toast/toast.component';
 import { ThemeService } from './core/services/theme.service';
+import { AdminPollService } from './core/services/admin-poll.service';
+import { LanguageService } from './core/services/language.service';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, NavbarComponent],
+  imports: [RouterOutlet, NavbarComponent, ToastComponent],
   template: `
     <div class="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
       <app-navbar />
@@ -14,9 +17,17 @@ import { ThemeService } from './core/services/theme.service';
         <router-outlet />
       </main>
     </div>
+
+    <!-- Global toast container -->
+    <app-toast />
   `
 })
-export class AppComponent {
-  // ThemeService инжектируется здесь, чтобы применить тему при старте приложения
-  constructor(private _theme: ThemeService) {}
+export class AppComponent implements OnInit {
+  private readonly _theme    = inject(ThemeService);
+  private readonly adminPoll = inject(AdminPollService);
+  private readonly _lang     = inject(LanguageService);
+
+  ngOnInit(): void {
+    this.adminPoll.start();
+  }
 }

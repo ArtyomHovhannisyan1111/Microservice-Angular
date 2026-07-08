@@ -2,6 +2,7 @@ import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { OrderService } from '../../core/services/order.service';
 import { ProductService } from '../../core/services/product.service';
 import { Order, OrderStatus } from '../../core/models/order.model';
@@ -13,7 +14,7 @@ type Tab = 'orders' | 'products';
 @Component({
   selector: 'app-admin-panel',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, ImageUrlPipe],
+  imports: [CommonModule, ReactiveFormsModule, ImageUrlPipe, TranslateModule],
   template: `
     <div class="max-w-6xl mx-auto">
       <!-- Header -->
@@ -26,8 +27,8 @@ type Tab = 'orders' | 'products';
           </svg>
         </div>
         <div>
-          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Панель администратора</h1>
-          <p class="text-sm text-gray-500 dark:text-gray-400">Управление товарами и заказами</p>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ 'ADMIN.TITLE' | translate }}</h1>
+          <p class="text-sm text-gray-500 dark:text-gray-400">{{ 'ADMIN.SUBTITLE' | translate }}</p>
         </div>
       </div>
 
@@ -48,14 +49,14 @@ type Tab = 'orders' | 'products';
                   ? 'border-b-2 border-primary-600 text-primary-600 dark:text-primary-400'
                   : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
                 class="px-6 py-3 text-sm font-medium transition-colors duration-200">
-          Заказы ({{ orders().length }})
+          {{ 'NAV.ADMIN_ORDERS' | translate }} ({{ orders().length }})
         </button>
         <button (click)="activeTab.set('products')"
                 [class]="activeTab() === 'products'
                   ? 'border-b-2 border-primary-600 text-primary-600 dark:text-primary-400'
                   : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
                 class="px-6 py-3 text-sm font-medium transition-colors duration-200">
-          Товары ({{ products().length }})
+          {{ 'NAV.ADMIN_PRODUCTS' | translate }} ({{ products().length }})
         </button>
       </div>
 
@@ -74,18 +75,18 @@ type Tab = 'orders' | 'products';
             }
           </div>
         } @else if (orders().length === 0) {
-          <p class="text-center text-gray-500 dark:text-gray-400 py-12">Заказов нет</p>
+          <p class="text-center text-gray-500 dark:text-gray-400 py-12">{{ 'ADMIN.NO_ORDERS' | translate }}</p>
         } @else {
           <div class="card overflow-hidden">
             <div class="overflow-x-auto">
               <table class="w-full text-sm">
                 <thead class="bg-gray-50 dark:bg-gray-700/50">
                   <tr>
-                    <th class="text-left px-4 py-3 font-semibold text-gray-700 dark:text-gray-300">Номер</th>
-                    <th class="text-left px-4 py-3 font-semibold text-gray-700 dark:text-gray-300">Получатель</th>
-                    <th class="text-left px-4 py-3 font-semibold text-gray-700 dark:text-gray-300">Дата</th>
-                    <th class="text-right px-4 py-3 font-semibold text-gray-700 dark:text-gray-300">Сумма</th>
-                    <th class="text-center px-4 py-3 font-semibold text-gray-700 dark:text-gray-300">Статус</th>
+                    <th class="text-left px-4 py-3 font-semibold text-gray-700 dark:text-gray-300">{{ 'ADMIN.COL_NUM' | translate }}</th>
+                    <th class="text-left px-4 py-3 font-semibold text-gray-700 dark:text-gray-300">{{ 'ADMIN.COL_USER' | translate }}</th>
+                    <th class="text-left px-4 py-3 font-semibold text-gray-700 dark:text-gray-300">{{ 'ADMIN.COL_PRODUCT_QTY' | translate }}</th>
+                    <th class="text-right px-4 py-3 font-semibold text-gray-700 dark:text-gray-300">{{ 'ADMIN.COL_AMOUNT' | translate }}</th>
+                    <th class="text-center px-4 py-3 font-semibold text-gray-700 dark:text-gray-300">{{ 'ADMIN.COL_STATUS' | translate }}</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
@@ -95,13 +96,13 @@ type Tab = 'orders' | 'products';
                         {{ order.id }}
                       </td>
                       <td class="px-4 py-3 text-gray-600 dark:text-gray-300">
-                        {{ order.shippingAddress.fullName }}
+                        {{ order.userName ?? ('Пользователь #' + order.userId) }}
                       </td>
                       <td class="px-4 py-3 text-gray-500 dark:text-gray-400">
-                        {{ order.createdAt | date:'dd.MM.yy HH:mm' }}
+                        #{{ order.productId }} × {{ order.quantity }}
                       </td>
                       <td class="px-4 py-3 text-right font-semibold text-gray-900 dark:text-white">
-                        {{ order.total | number:'1.0-0' }} ₽
+                        {{ order.totalPrice | number:'1.0-0' }} ₽
                       </td>
                       <td class="px-4 py-3 text-center">
                         <select [value]="order.status"
@@ -110,11 +111,11 @@ type Tab = 'orders' | 'products';
                                        bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300
                                        px-2 py-1 cursor-pointer focus:outline-none focus:ring-1
                                        focus:ring-primary-500">
-                          <option value="pending">Ожидает</option>
-                          <option value="processing">Обрабатывается</option>
-                          <option value="shipped">Отправлен</option>
-                          <option value="delivered">Доставлен</option>
-                          <option value="cancelled">Отменён</option>
+                          <option value="pending">{{ 'STATUS.PENDING' | translate }}</option>
+                          <option value="processing">{{ 'STATUS.PROCESSING' | translate }}</option>
+                          <option value="shipped">{{ 'STATUS.SHIPPED' | translate }}</option>
+                          <option value="delivered">{{ 'STATUS.DELIVERED' | translate }}</option>
+                          <option value="cancelled">{{ 'STATUS.CANCELLED' | translate }}</option>
                         </select>
                       </td>
                     </tr>
@@ -130,16 +131,21 @@ type Tab = 'orders' | 'products';
       @if (activeTab() === 'products') {
         <!-- Add product form -->
         <div class="card p-6 mb-6">
-          <h3 class="font-semibold text-gray-900 dark:text-white mb-4">Добавить новый товар</h3>
+          <h3 class="font-semibold text-gray-900 dark:text-white mb-4">{{ 'ADMIN.ADD_PRODUCT_TITLE' | translate }}</h3>
           <form [formGroup]="productForm" (ngSubmit)="addProduct()" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Название</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{{ 'ADMIN.PRODUCT_NAME' | translate }}</label>
               <input formControlName="name" type="text" class="input-field" placeholder="Название товара"
                      [class.border-red-500]="pf['name'].invalid && pf['name'].touched">
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Категория</label>
-              <input formControlName="category" type="text" class="input-field" placeholder="Электроника">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{{ 'ADMIN.CATEGORY' | translate }}</label>
+              <select formControlName="category" class="input-field">
+                <option value="" disabled>Выберите категорию</option>
+                @for (cat of categories; track cat) {
+                  <option [value]="cat">{{ cat }}</option>
+                }
+              </select>
             </div>
             <div class="sm:col-span-2">
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Описание</label>
@@ -170,7 +176,7 @@ type Tab = 'orders' | 'products';
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
                   </svg>
                 }
-                {{ addingProduct() ? 'Добавление...' : 'Добавить товар' }}
+                {{ (addingProduct() ? 'ADMIN.ADDING' : 'CATALOG.ADD_PRODUCT') | translate }}
               </button>
               @if (addSuccess()) {
                 <span class="text-sm text-green-600 dark:text-green-400 flex items-center gap-1">
@@ -250,6 +256,8 @@ export class AdminPanelComponent implements OnInit {
   private orderService   = inject(OrderService);
   private productService = inject(ProductService);
   private fb             = inject(FormBuilder);
+
+  readonly categories = this.productService.getCategories();
 
   readonly activeTab      = signal<Tab>('orders');
   readonly orders         = signal<Order[]>([]);
