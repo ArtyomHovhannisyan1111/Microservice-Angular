@@ -5,13 +5,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -47,27 +47,6 @@ public class SecurityConfig {
         return source;
     }
 
-    private static RequestMatcher uri(String... prefixes) {
-        return req -> {
-            String path = req.getRequestURI();
-            for (String p : prefixes) {
-                if (path.equals(p) || path.startsWith(p + "/")) return true;
-            }
-            return false;
-        };
-    }
-
-    private static RequestMatcher uriMethod(String method, String... prefixes) {
-        return req -> {
-            if (!method.equalsIgnoreCase(req.getMethod())) return false;
-            String path = req.getRequestURI();
-            for (String p : prefixes) {
-                if (path.equals(p) || path.startsWith(p + "/")) return true;
-            }
-            return false;
-        };
-    }
-
     @Bean
     public SecurityFilterChain configure(HttpSecurity http) throws Exception {
         http
@@ -75,25 +54,23 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(uri("/auth", "/api/auth", "/error")).permitAll()
+                        // Auth — public
+                        .requestMatchers("/auth/**", "/api/auth/**", "/error").permitAll()
 
-                        .requestMatchers(uriMethod("GET", "/api/products")).permitAll()
-                        .requestMatchers(uriMethod("POST", "/api/products")).hasRole("ADMIN")
-                        .requestMatchers(uriMethod("PUT", "/api/products")).hasRole("ADMIN")
-                        .requestMatchers(uriMethod("DELETE", "/api/products")).hasRole("ADMIN")
+                        // Products — GET public; write ops require authentication (product-service enforces roles)
+                        .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
+                        .requestMatchers("/api/products/**").hasAnyRole("USER", "ADMIN")
 
-                        .requestMatchers(uri("/api/orders")).hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(uri("/api/notifications")).hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(uri("/api/users")).hasAnyRole("USER", "ADMIN")
+                        .requestMatchers("/api/orders", "/api/orders/**").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers("/api/notifications", "/api/notifications/**").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers("/api/users", "/api/users/**").hasAnyRole("USER", "ADMIN")
 
-                        .requestMatchers(uriMethod("GET", "/api/image")).permitAll()
-                        .requestMatchers(uriMethod("POST", "/api/image")).hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/image", "/api/image/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/image", "/api/image/**").hasRole("ADMIN")
 
-                        .requestMatchers(uri("/api/analytics")).hasRole("ADMIN")
-
-                        .requestMatchers(uri("/api/payment-methods")).hasAnyRole("USER", "ADMIN")
-
-                        .requestMatchers(uri("/api/v1/balance")).hasAnyRole("USER", "ADMIN")
+                        .requestMatchers("/api/analytics", "/api/analytics/**").hasRole("ADMIN")
+                        .requestMatchers("/api/payment-methods", "/api/payment-methods/**").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers("/api/v1/balance", "/api/v1/balance/**").hasAnyRole("USER", "ADMIN")
 
                         .anyRequest().hasRole("ADMIN")
                 )

@@ -16,7 +16,7 @@ spring:
                 - Path=/api/products/**
 
             - id: order-service
-              uri: ${ORDER_SERVICE_URL:http://localhost:8084}
+              uri: ${ORDER_SERVICE_URL:http://localhost:8086}
               predicates:
                 - Path=/api/orders/**
 
@@ -51,12 +51,12 @@ spring:
                 - Path=/api/analytics/**
 
             - id: payment-service
-              uri: ${PAYMENT_SERVICE_URL:http://localhost:8094}
+              uri: ${PAYMENT_SERVICE_URL:http://localhost:8085}
               predicates:
                 - Path=/api/payment-methods/**
 
             - id: balance-service
-              uri: ${PAYMENT_SERVICE_URL:http://localhost:8094}
+              uri: ${PAYMENT_SERVICE_URL:http://localhost:8085}
               predicates:
                 - Path=/api/v1/balance/**
 

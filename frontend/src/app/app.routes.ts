@@ -65,5 +65,10 @@ export const routes: Routes = [
     loadComponent: () => import('./features/admin/analytics/analytics.component').then(m => m.AnalyticsComponent),
     canActivate: [authGuard, adminGuard]
   },
+  {
+    path: 'product/:id',
+    loadComponent: () => import('./features/catalog/product-detail/product-detail.component')
+      .then(m => m.ProductDetailComponent)
+  },
   { path: '**', redirectTo: '/catalog' }
 ];

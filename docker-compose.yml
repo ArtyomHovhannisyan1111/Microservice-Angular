@@ -158,8 +158,9 @@ services:
       kafka:
         condition: service_started
     ports:
-      - "8081:8080"
+      - "8082:8080"
     environment:
+      SERVER_PORT: 8080
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/microservice_db
       SPRING_DATASOURCE_USERNAME: postgres
@@ -179,7 +180,7 @@ services:
       kafka:
         condition: service_started
     ports:
-      - "8082:8080"
+      - "8083:8080"
     environment:
       SERVER_PORT: 8080
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
@@ -224,7 +225,7 @@ services:
       db-auth:
         condition: service_healthy
     ports:
-      - "8085:8080"
+      - "8081:8080"
     environment:
       SERVER_PORT: 8080
       SPRING_DATASOURCE_URL: jdbc:postgresql://db-auth:5432/auth_db
@@ -245,7 +246,7 @@ services:
       kafka:
         condition: service_started
     ports:
-      - "8088:8080"
+      - "8084:8080"
     environment:
       SERVER_PORT: 8080
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
@@ -285,7 +286,7 @@ services:
       minio:
         condition: service_healthy
     ports:
-      - "8083:8080"
+      - "8085:8080"
     environment:
       SERVER_PORT: 8080
       MINIO_ENDPOINT: http://minio:9000
@@ -308,7 +309,7 @@ services:
       kafka:
         condition: service_started
     ports:
-      - "8093:8080"
+      - "8087:8080"
     environment:
       SERVER_PORT: 8080
       DB_HOST: db-analytics
@@ -336,7 +337,7 @@ services:
       - analytics-service
       - payment-service
     ports:
-      - "8089:8080"
+      - "8080:8080"
     environment:
       SERVER_PORT: 8080
       PRODUCT_SERVICE_URL: http://product-service:8080
@@ -346,7 +347,7 @@ services:
       USER_SERVICE_URL: http://user-service:8080
       IMAGE_SERVICE_URL: http://image-service:8080
       ANALYTICS_SERVICE_URL: http://analytics-service:8080
-      PAYMENT_SERVICE_URL: http://payment-service:8094
+      PAYMENT_SERVICE_URL: http://payment-service:8080
     restart: always
     networks:
       - ecommerce-network
@@ -380,9 +381,9 @@ services:
       payment-db:
         condition: service_healthy
     ports:
-      - "8094:8094"
+      - "8088:8080"
     environment:
-      SERVER_PORT: 8094
+      SERVER_PORT: 8080
       SPRING_DATASOURCE_URL: jdbc:postgresql://payment-db:5432/payment_db
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres

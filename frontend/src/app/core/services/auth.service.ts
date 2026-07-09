@@ -30,7 +30,7 @@ export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
 
-  private readonly GW = 'http://localhost:8089';
+  private readonly GW = 'http://localhost:8080';
 
   readonly user = this._user.asReadonly();
   readonly role = this._role.asReadonly();
@@ -164,7 +164,7 @@ export class AuthService {
   private parseAuthError(e: unknown): string {
     if (e instanceof HttpErrorResponse) {
       if (e.status === 0 || e.error instanceof ProgressEvent) {
-        return 'Сервер недоступен (порт 8089). Убедитесь что Docker запущен.';
+        return 'Сервер недоступен (порт 8080). Убедитесь что Docker запущен.';
       }
       if (e.status === 401) return 'Неверный email или пароль';
       if (e.status === 400) {

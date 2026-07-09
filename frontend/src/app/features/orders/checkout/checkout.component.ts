@@ -333,8 +333,8 @@ export class CheckoutComponent implements OnInit {
       this.router.navigate(['/orders'], { queryParams: { new: lastOrder?.id } });
     } catch (e: unknown) {
       if (e instanceof HttpErrorResponse) {
-        if (e.status === 403 || e.status === 401) {
-          this.error.set('Сессия устарела. Выйдите из аккаунта и войдите снова.');
+        if (e.status === 401) {
+          this.error.set('Сессия истекла. Выйдите из аккаунта и войдите снова.');
         } else {
           const detail = e.error?.error ?? e.error?.message ?? e.error;
           const msg = typeof detail === 'string' && detail.trim() ? detail : '';

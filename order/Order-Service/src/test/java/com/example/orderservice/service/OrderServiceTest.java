@@ -58,11 +58,10 @@ class OrderServiceTest {
         request.setUserName("Покупатель");
 
         product = new ProductResponse();
-        product.setId(5);
+        product.setProductId(5);
         product.setName("Ноутбук");
         product.setPrice(new BigDecimal("50000.00"));
-        product.setStock(10);
-        product.setActive(true);
+        product.setQuantity(10);
     }
 
     // ── createOrder ───────────────────────────────────────────────────────────

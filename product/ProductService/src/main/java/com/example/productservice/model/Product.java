@@ -29,4 +29,6 @@ public class Product implements Serializable {
     private String imageUrl;
     private String category;
     private Long categoryId;
+    private String description;
+    private Double rating;
 }

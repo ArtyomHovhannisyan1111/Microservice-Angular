@@ -69,6 +69,7 @@ public class ProductService {
         product.setQuantity(request.getQuantity());
         product.setImageUrl(request.getImageUrl());
         product.setCategory(request.getCategory());
+        product.setDescription(request.getDescription());
 
         Product updatedProduct = productRepository.save(product);
         publishProductEvent(updatedProduct);
@@ -149,7 +150,9 @@ public class ProductService {
                 product.getPrice(),
                 product.getImageUrl(),
                 product.getCategory(),
-                product.getQuantity()
+                product.getQuantity(),
+                product.getDescription(),
+                product.getRating()
         ));
     }
 

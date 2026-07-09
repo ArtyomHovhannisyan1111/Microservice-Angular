@@ -16,7 +16,7 @@ on:
   pull_request:
     branches: [ main, develop ]
 
-# Отменяем устаревший запуск при новом push в ту же ветку
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -28,16 +28,13 @@ env:
 
 jobs:
 
-  # ============================================================================
-  # STAGE 0 — ОПРЕДЕЛЕНИЕ ИЗМЕНЕНИЙ
-  # Запускаем тесты/сборку только для тех сервисов, в которых были изменения
-  # ============================================================================
+
   detect-changes:
     name: "Определение изменений"
     runs-on: ubuntu-latest
     outputs:
-      any-backend:    ${{ steps.any-backend.outputs.changed }}
-      frontend:       ${{ steps.filter.outputs.frontend }}
+      any-backend: ${{ steps.any-backend.outputs.changed }}
+      frontend: ${{ steps.filter.outputs.frontend }}
       backend-matrix: ${{ steps.build-matrix.outputs.matrix }}
     steps:
       - uses: actions/checkout@v4
@@ -118,11 +115,7 @@ jobs:
             echo "matrix={\"include\":[$joined]}" >> $GITHUB_OUTPUT
           fi
 
-  # ============================================================================
-  # STAGE 1 — ТЕСТЫ БЭКЕНД-СЕРВИСОВ
-  # Testcontainers сам поднимает PostgreSQL/Kafka внутри раннера — отдельно
-  # конфигурировать сервисы не нужно. Нужен только доступный Docker daemon.
-  # ============================================================================
+
   test-backend:
     name: "Тесты — ${{ matrix.name }}"
     needs: detect-changes
@@ -134,7 +127,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # cache: maven кэширует ~/.m2/repository по хэшу pom.xml
       - name: Установка JDK ${{ env.JAVA_VERSION }}
         uses: actions/setup-java@v4
         with:
@@ -142,14 +134,12 @@ jobs:
           distribution: temurin
           cache: maven
 
-      # RYUK отключаем — в GitHub Actions он вызывает проблемы с правами
       - name: "Тесты — ${{ matrix.name }}"
         working-directory: ${{ matrix.path }}
         run: mvn test --no-transfer-progress
         env:
           TESTCONTAINERS_RYUK_DISABLED: 'true'
 
-      # Публикуем отчёт о тестах в интерфейс PR/Actions
       - name: Публикация результатов тестов
         uses: mikepenz/action-junit-report@v4
         if: always()
@@ -157,9 +147,7 @@ jobs:
           report_paths: '${{ matrix.path }}/target/surefire-reports/TEST-*.xml'
           check_name: 'Tests — ${{ matrix.name }}'
 
-  # ============================================================================
-  # STAGE 2 — СБОРКА JAR
-  # ============================================================================
+
   build-backend:
     name: "Сборка JAR — ${{ matrix.name }}"
     needs: [ detect-changes, test-backend ]
@@ -189,9 +177,6 @@ jobs:
           path: ${{ matrix.path }}/target/*.jar
           retention-days: 7
 
-  # ============================================================================
-  # STAGE 2 — СБОРКА ФРОНТЕНДА
-  # ============================================================================
   build-frontend:
     name: "Сборка Angular (production)"
     needs: detect-changes
@@ -200,7 +185,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # cache: npm кэширует ~/.npm по хэшу package-lock.json
       - name: Установка Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
         with:
@@ -208,7 +192,6 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      # npm ci — детерминированная установка строго по lock-файлу
       - name: Установка npm-зависимостей
         working-directory: frontend
         run: npm ci
@@ -224,58 +207,53 @@ jobs:
           path: frontend/dist/
           retention-days: 7
 
-# =============================================================================
-# STAGE 3 — DOCKER BUILD & PUSH (закомментировано — раскомментировать позже)
-#
-# Требования:
-#   Секреты GitHub: DOCKER_USERNAME, DOCKER_TOKEN (Settings → Secrets → Actions)
-# =============================================================================
 
-# docker-build-push:
-#   name: "Docker — ${{ matrix.name }}"
-#   needs: [ detect-changes, build-backend ]
-#   if: |
-#     github.ref == 'refs/heads/main' &&
-#     needs.detect-changes.outputs.any-backend == 'true'
-#   runs-on: ubuntu-latest
-#   strategy:
-#     fail-fast: false
-#     matrix:
-#       include:
-#         - { name: auth-service,         path: auth2/auth-service,                          dockerfile: auth2/auth-service/Dockerfile }
-#         - { name: gateway-service,       path: gateway/gateway-service,                     dockerfile: gateway/Dockerfile }
-#         - { name: product-service,       path: product/ProductService,                      dockerfile: product/Dockerfile }
-#         - { name: order-service,         path: order/Order-Service,                         dockerfile: order/Dockerfile }
-#         - { name: user-service,          path: user/user-service/user-service,              dockerfile: user/Dockerfile }
-#         - { name: notification-service,  path: notification/Notifictaion-Service,           dockerfile: notification/Dockerfile }
-#         - { name: payment-service,       path: payment/payment-service/Payment-Service,     dockerfile: payment/payment-service/Payment-Service/Dockerfile }
-#         - { name: image-service,         path: image/image-service/image-service,           dockerfile: image/Dockerfile }
-#         - { name: analytics-service,     path: analytics/analytics-service,                 dockerfile: analytics/analytics-service/Dockerfile }
-#   steps:
-#     - uses: actions/checkout@v4
-#     - name: Логин в Docker Hub
-#       uses: docker/login-action@v3
-#       with:
-#         username: ${{ secrets.DOCKER_USERNAME }}
-#         password: ${{ secrets.DOCKER_TOKEN }}
-#     - name: Настройка Docker Buildx
-#       uses: docker/setup-buildx-action@v3
-#     - name: Генерация тегов
-#       id: meta
-#       uses: docker/metadata-action@v5
-#       with:
-#         images: ${{ secrets.DOCKER_USERNAME }}/${{ matrix.name }}
-#         tags: |
-#           type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-#           type=ref,event=branch
-#           type=sha,prefix=sha-,format=short
-#     - name: "Build & Push — ${{ matrix.name }}"
-#       uses: docker/build-push-action@v5
-#       with:
-#         context: ${{ matrix.path }}
-#         file: ${{ matrix.dockerfile }}
-#         push: true
-#         tags: ${{ steps.meta.outputs.tags }}
-#         labels: ${{ steps.meta.outputs.labels }}
-#         cache-from: type=gha
-#         cache-to: type=gha,mode=max
+
+  docker-build-push:
+    name: "Docker — ${{ matrix.name }}"
+    needs: [ detect-changes, build-backend ]
+    if: |
+      github.ref == 'refs/heads/main' &&
+      needs.detect-changes.outputs.any-backend == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: auth-service,         path: auth2/auth-service,                          dockerfile: auth2/auth-service/Dockerfile }
+          - { name: gateway-service,       path: gateway/gateway-service,                     dockerfile: gateway/Dockerfile }
+          - { name: product-service,       path: product/ProductService,                      dockerfile: product/Dockerfile }
+          - { name: order-service,         path: order/Order-Service,                         dockerfile: order/Dockerfile }
+          - { name: user-service,          path: user/user-service/user-service,              dockerfile: user/Dockerfile }
+          - { name: notification-service,  path: notification/Notifictaion-Service,           dockerfile: notification/Dockerfile }
+          - { name: payment-service,       path: payment/payment-service/Payment-Service,     dockerfile: payment/payment-service/Payment-Service/Dockerfile }
+          - { name: image-service,         path: image/image-service/image-service,           dockerfile: image/Dockerfile }
+          - { name: analytics-service,     path: analytics/analytics-service,                 dockerfile: analytics/analytics-service/Dockerfile }
+    steps:
+      - uses: actions/checkout@v4
+      - name: Логин в Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+      - name: Настройка Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Генерация тегов
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKER_USERNAME }}/${{ matrix.name }}
+          tags: |
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=ref,event=branch
+            type=sha,prefix=sha-,format=short
+      - name: "Build & Push — ${{ matrix.name }}"
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.path }}
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

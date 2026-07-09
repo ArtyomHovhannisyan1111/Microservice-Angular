@@ -13,6 +13,8 @@ public class ProductMapper {
                 .quantity(productRequest.getQuantity())
                 .imageUrl(productRequest.getImageUrl())
                 .category(productRequest.getCategory())
+                .description(productRequest.getDescription())
+                .rating(0.0)
                 .build();
     }
 }

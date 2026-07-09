@@ -1,6 +1,6 @@
 import { Component, Input, Output, EventEmitter, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { Product } from '../../../core/models/product.model';
 import { ImageUrlPipe, IMAGE_PLACEHOLDER } from '../../../core/pipes/image-url.pipe';
@@ -9,9 +9,10 @@ import { AuthService } from '../../../core/services/auth.service';
 @Component({
   selector: 'app-product-card',
   standalone: true,
-  imports: [CommonModule, ImageUrlPipe, TranslateModule],
+  imports: [CommonModule, RouterLink, ImageUrlPipe, TranslateModule],
   template: `
-    <div class="card flex flex-col overflow-hidden group hover:shadow-md transition-shadow duration-200">
+    <div class="card flex flex-col overflow-hidden group hover:shadow-md transition-shadow duration-200 cursor-pointer"
+         [routerLink]="['/product', product.id]">
       <!-- Image -->
       <div class="relative overflow-hidden bg-gray-100 dark:bg-gray-700 h-48">
         <img
@@ -75,7 +76,7 @@ import { AuthService } from '../../../core/services/auth.service';
           </span>
           @if (!auth.isAdmin()) {
             <button
-              (click)="onAdd()"
+              (click)="onAdd(); $event.stopPropagation()"
               [disabled]="product.stock === 0 || added()"
               class="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg
                      transition-all duration-200 flex-shrink-0"
