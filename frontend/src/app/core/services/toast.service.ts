@@ -15,8 +15,12 @@ export class ToastService {
   private readonly _toasts = signal<Toast[]>([]);
   readonly toasts = this._toasts.asReadonly();
 
+  private generateId(): string {
+    return Date.now().toString(36) + Math.random().toString(36).substring(2);
+  }
+
   show(type: ToastType, title: string, message = '', duration = 5000): void {
-    const id = crypto.randomUUID();
+    const id = this.generateId();
     this._toasts.update(list => [...list, { id, type, title, message, duration }]);
     setTimeout(() => this.dismiss(id), duration);
   }

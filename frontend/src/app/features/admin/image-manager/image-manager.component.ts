@@ -118,7 +118,7 @@ export class ImageManagerComponent implements OnDestroy {
         return true;
       })
       .map(file => ({
-        id:         crypto.randomUUID(),
+        id:         Date.now().toString(36) + Math.random().toString(36).substring(2),
         file,
         previewUrl: URL.createObjectURL(file),
         status:     'pending' as const,

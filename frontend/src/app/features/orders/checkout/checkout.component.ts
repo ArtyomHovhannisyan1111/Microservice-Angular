@@ -319,7 +319,7 @@ export class CheckoutComponent implements OnInit {
       for (const cartItem of cartItems) {
         lastOrder = await firstValueFrom(
           this.orderService.createOrder({
-            requestId: crypto.randomUUID(),
+            requestId: Date.now().toString(36) + Math.random().toString(36).substring(2),
             userId:    user?.walletUserId ?? user?.userId,
             productId: Number(cartItem.product.id),
             quantity:  cartItem.quantity,
