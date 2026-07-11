@@ -394,6 +394,19 @@ services:
     networks:
       - ecommerce-network
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - gateway-service
+    restart: always
+    networks:
+      - ecommerce-network
+
 networks:
   ecommerce-network:
     driver: bridge
