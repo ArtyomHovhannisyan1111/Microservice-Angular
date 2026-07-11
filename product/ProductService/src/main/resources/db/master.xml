@@ -9,5 +9,6 @@
     <include file="db/changelog/002-make-product-values-nullable.xml"/>
     <include file="db/changelog/003-add-description-rating-to-products.xml"/>
     <include file="db/changelog/004-create-reviews-table.xml"/>
+    <include file="db/changelog/005-add-category-imageurl-to-products.xml"/>
 
 </databaseChangeLog>

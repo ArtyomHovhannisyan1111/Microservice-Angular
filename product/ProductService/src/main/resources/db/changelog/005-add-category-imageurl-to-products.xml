@@ -1,0 +1,41 @@
+<?xml version="1.1" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <changeSet id="5a" author="admin">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="products" columnName="category"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="products">
+            <column name="category" type="VARCHAR(255)"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="5b" author="admin">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="products" columnName="category_id"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="products">
+            <column name="category_id" type="BIGINT"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="5c" author="admin">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="products" columnName="image_url"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="products">
+            <column name="image_url" type="VARCHAR(1000)"/>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>
