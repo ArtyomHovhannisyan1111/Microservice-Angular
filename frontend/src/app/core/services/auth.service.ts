@@ -108,7 +108,7 @@ export class AuthService {
         this.http.post<UserServiceResponse>(`${this.GW}/api/users/register`, {
           username: email,
           email:    email,
-          password: 'N/A'
+          password: 'SYNC-ONLY'
         })
       );
       const bal          = Number(res.balance) || 0;
