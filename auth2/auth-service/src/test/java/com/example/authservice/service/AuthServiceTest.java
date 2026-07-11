@@ -45,8 +45,6 @@ class AuthServiceTest {
         storedUser   = new UserAuth(1L, "ivan", "$2a$10$hashed", Role.USER);
     }
 
-    // ── register ──────────────────────────────────────────────────────────────
-
     @Nested @DisplayName("register()")
     class Register {
 
@@ -75,8 +73,6 @@ class AuthServiceTest {
             then(userRepository).should(never()).save(any());
         }
     }
-
-    // ── login ─────────────────────────────────────────────────────────────────
 
     @Nested @DisplayName("login()")
     class Login {

@@ -270,10 +270,10 @@ import { LangSwitcherComponent } from '../lang-switcher/lang-switcher.component'
                   </span>
                   @if (auth.isAdmin()) {
                     <span class="text-[10px] font-bold text-amber-600 dark:text-amber-400
-                                 uppercase tracking-wide leading-tight">Admin</span>
+                                 uppercase tracking-wide leading-tight">{{ 'NAV.ROLE_ADMIN' | translate }}</span>
                   } @else {
                     <span class="text-[10px] text-gray-400 dark:text-gray-500
-                                 uppercase tracking-wide leading-tight">User</span>
+                                 uppercase tracking-wide leading-tight">{{ 'NAV.ROLE_USER' | translate }}</span>
                   }
                 </div>
                 <button (click)="auth.logout()"
@@ -386,6 +386,8 @@ export class NavbarComponent implements OnInit {
     }));
     if (this.auth.isAuthenticated()) {
       this.auth.loadUserBalance();
+      const uid = this.auth.user()?.walletUserId ?? this.auth.user()?.userId ?? Number(this.auth.user()?.id);
+      if (uid) this.notifService.loadForUser(uid);
     }
   }
 

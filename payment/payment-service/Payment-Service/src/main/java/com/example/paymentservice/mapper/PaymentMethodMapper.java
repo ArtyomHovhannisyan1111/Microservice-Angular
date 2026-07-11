@@ -6,6 +6,7 @@ import com.example.paymentservice.dto.PaymentMethodResponse;
 import com.example.paymentservice.model.PaymentMethod;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 @Component
@@ -25,6 +26,7 @@ public class PaymentMethodMapper {
                 .cardholderName(request.getCardholderName())
                 .cvv(request.getCvv())
                 .isActive(true)
+                .amount(BigDecimal.ZERO)
                 .build();
 
     }
@@ -40,7 +42,8 @@ public class PaymentMethodMapper {
                 response.getProviderName(),
                 response.getMaskedNumber(),
                 response.getCardholderName(),
-                response.isActive()
+                response.isActive(),
+                response.getAmount() != null ? response.getAmount() : BigDecimal.ZERO
         );
 
     }

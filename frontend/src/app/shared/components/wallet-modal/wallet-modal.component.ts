@@ -1,4 +1,5 @@
-import { Component, Input, Output, EventEmitter, inject, signal, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject, signal, OnChanges, OnInit, SimpleChanges, computed, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -7,6 +8,8 @@ import { AuthService } from '../../../core/services/auth.service';
 import { PaymentService } from '../../../core/services/payment.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { PaymentMethod } from '../../../core/models/payment.model';
+
+type Tab = 'deposit' | 'transfer';
 
 @Component({
   selector: 'app-wallet-modal',
@@ -31,9 +34,11 @@ import { PaymentMethod } from '../../../core/models/payment.model';
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
                 </svg>
               </div>
-              <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-1">{{ 'WALLET.SUCCESS_TITLE' | translate }}</h3>
+              <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-1">
+                {{ 'WALLET.SUCCESS_TITLE' | translate }}
+              </h3>
               <p class="text-sm text-gray-500 dark:text-gray-400 text-center">
-                {{ 'WALLET.SUCCESS_MSG' | translate }}
+                {{ activeTab() === 'deposit' ? ('WALLET.DEPOSIT_SUCCESS_MSG' | translate) : ('WALLET.SUCCESS_MSG' | translate) }}
               </p>
             </div>
 
@@ -73,8 +78,43 @@ import { PaymentMethod } from '../../../core/models/payment.model';
               </button>
             </div>
 
+            <!-- Tabs -->
+            <div class="flex border-b border-gray-200 dark:border-gray-700">
+              <button type="button"
+                      (click)="setTab('deposit')"
+                      class="flex-1 py-3 text-sm font-medium transition-colors duration-150"
+                      [class.text-indigo-600]="activeTab() === 'deposit'"
+                      [class.dark:text-indigo-400]="activeTab() === 'deposit'"
+                      [class.border-b-2]="activeTab() === 'deposit'"
+                      [class.border-indigo-500]="activeTab() === 'deposit'"
+                      [class.text-gray-500]="activeTab() !== 'deposit'"
+                      [class.dark:text-gray-400]="activeTab() !== 'deposit'">
+                {{ 'WALLET.TAB_DEPOSIT' | translate }}
+              </button>
+              <button type="button"
+                      (click)="setTab('transfer')"
+                      class="flex-1 py-3 text-sm font-medium transition-colors duration-150"
+                      [class.text-indigo-600]="activeTab() === 'transfer'"
+                      [class.dark:text-indigo-400]="activeTab() === 'transfer'"
+                      [class.border-b-2]="activeTab() === 'transfer'"
+                      [class.border-indigo-500]="activeTab() === 'transfer'"
+                      [class.text-gray-500]="activeTab() !== 'transfer'"
+                      [class.dark:text-gray-400]="activeTab() !== 'transfer'">
+                {{ 'WALLET.TAB_TRANSFER' | translate }}
+              </button>
+            </div>
+
             <!-- Form -->
             <form [formGroup]="form" (ngSubmit)="submit()" class="px-6 py-6 space-y-5">
+
+              <!-- Tab hint -->
+              <p class="text-xs text-gray-400 dark:text-gray-500 -mb-2">
+                @if (activeTab() === 'deposit') {
+                  {{ 'WALLET.DEPOSIT_HINT' | translate }}
+                } @else {
+                  {{ 'WALLET.TRANSFER_HINT' | translate }}
+                }
+              </p>
 
               <!-- Card selector -->
               <div>
@@ -101,9 +141,7 @@ import { PaymentMethod } from '../../../core/models/payment.model';
                 } @else if (methods().length === 0) {
                   <div class="rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 p-4 text-center">
                     <p class="text-sm text-gray-500 dark:text-gray-400">{{ 'WALLET.NO_CARDS' | translate }}</p>
-                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                      {{ 'WALLET.ADD_CARD_HINT' | translate }}
-                    </p>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{{ 'WALLET.ADD_CARD_HINT' | translate }}</p>
                   </div>
                 } @else {
                   <select formControlName="cardId"
@@ -113,11 +151,29 @@ import { PaymentMethod } from '../../../core/models/payment.model';
                                  focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors">
                     <option value="">{{ 'WALLET.SELECT_CARD' | translate }}</option>
                     @for (m of methods(); track m.id) {
-                      <option [value]="m.id">{{ m.providerName }} {{ m.maskedNumber }}</option>
+                      <option [value]="m.id">
+                        {{ m.providerName }} {{ m.maskedNumber }} — {{ fmtAmount(m.amount) }}
+                      </option>
                     }
                   </select>
                   @if (form.get('cardId')?.invalid && form.get('cardId')?.touched) {
                     <p class="text-xs text-red-500 mt-1">{{ 'WALLET.SELECT_CARD' | translate }}</p>
+                  }
+
+                  <!-- Selected card balance (transfer tab only) -->
+                  @if (activeTab() === 'transfer' && selectedCard()) {
+                    <div class="mt-2 flex items-center gap-1.5 text-xs">
+                      <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                      </svg>
+                      <span class="text-gray-500 dark:text-gray-400">
+                        {{ 'WALLET.CARD_BALANCE' | translate }}:
+                        <span class="font-semibold text-gray-700 dark:text-gray-200">
+                          {{ fmtAmount(selectedCard()!.amount) }}
+                        </span>
+                      </span>
+                    </div>
                   }
                 }
               </div>
@@ -141,7 +197,11 @@ import { PaymentMethod } from '../../../core/models/payment.model';
                 </div>
                 @if (isInvalid('amount')) {
                   <p class="text-xs text-red-500 mt-1">
-                    {{ (form.get('amount')?.errors?.['max'] ? 'WALLET.MAX_AMOUNT' : 'WALLET.MIN_AMOUNT') | translate }}
+                    @if (form.get('amount')?.errors?.['max']) {
+                      {{ 'WALLET.EXCEEDS_CARD_BALANCE' | translate }}
+                    } @else {
+                      {{ 'WALLET.MIN_AMOUNT' | translate }}
+                    }
                   </p>
                 }
               </div>
@@ -156,10 +216,11 @@ import { PaymentMethod } from '../../../core/models/payment.model';
                 @if (loading()) {
                   <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-                    <path class="opacity-75" fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
                   </svg>
                   {{ 'WALLET.PROCESSING' | translate }}
+                } @else if (activeTab() === 'deposit') {
+                  {{ 'WALLET.DEPOSIT_BTN' | translate }}
                 } @else {
                   {{ 'WALLET.TOP_UP_BTN' | translate }}
                 }
@@ -171,21 +232,28 @@ import { PaymentMethod } from '../../../core/models/payment.model';
     }
   `
 })
-export class WalletModalComponent implements OnChanges {
+export class WalletModalComponent implements OnChanges, OnInit {
   @Input() open = false;
   @Output() closeModal = new EventEmitter<void>();
 
   readonly auth    = inject(AuthService);
-  private readonly payment = inject(PaymentService);
-  private readonly fb      = inject(FormBuilder);
-  private readonly toast   = inject(ToastService);
-  private readonly t       = inject(TranslateService);
+  private readonly payment   = inject(PaymentService);
+  private readonly fb        = inject(FormBuilder);
+  private readonly toast     = inject(ToastService);
+  private readonly t         = inject(TranslateService);
+  private readonly destroyRef = inject(DestroyRef);
 
+  readonly activeTab    = signal<Tab>('transfer');
   readonly loading      = signal(false);
   readonly success      = signal(false);
   readonly methods      = signal<PaymentMethod[]>([]);
   readonly cardsLoading = signal(false);
   readonly cardsError   = signal('');
+
+  readonly selectedCard = computed(() => {
+    const id = Number(this.form.get('cardId')?.value);
+    return this.methods().find(m => m.id === id) ?? null;
+  });
 
   form = this.fb.group({
     cardId: ['', Validators.required],
@@ -196,10 +264,38 @@ export class WalletModalComponent implements OnChanges {
     return '$' + this.auth.balance().toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
+  fmtAmount(v: number | null | undefined): string {
+    if (v == null) return '$0.00';
+    return '$' + Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  ngOnInit(): void {
+    this.form.get('cardId')!.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.updateAmountValidator());
+  }
+
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['open']?.currentValue === true) {
       this.loadCards();
     }
+  }
+
+  setTab(tab: Tab): void {
+    this.activeTab.set(tab);
+    this.form.get('amount')?.reset();
+    this.updateAmountValidator();
+  }
+
+  private updateAmountValidator(): void {
+    const amountCtrl = this.form.get('amount')!;
+    if (this.activeTab() === 'transfer') {
+      const max = this.selectedCard()?.amount ?? 1_000_000;
+      amountCtrl.setValidators([Validators.required, Validators.min(1), Validators.max(max)]);
+    } else {
+      amountCtrl.setValidators([Validators.required, Validators.min(1), Validators.max(1_000_000)]);
+    }
+    amountCtrl.updateValueAndValidity();
   }
 
   async loadCards(): Promise<void> {
@@ -215,11 +311,11 @@ export class WalletModalComponent implements OnChanges {
       this.methods.set(list);
       if (list.length === 1) {
         this.form.patchValue({ cardId: String(list[0].id) });
+        this.updateAmountValidator();
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : this.t.instant('WALLET.LOAD_ERROR');
       this.cardsError.set(msg);
-      console.error('[wallet-modal] loadCards error:', err);
     } finally {
       this.cardsLoading.set(false);
     }
@@ -231,15 +327,24 @@ export class WalletModalComponent implements OnChanges {
   }
 
   async submit(): Promise<void> {
+    this.updateAmountValidator();
     if (this.loading()) return;
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
-    }
+    if (this.form.invalid) { this.form.markAllAsTouched(); return; }
+
     this.loading.set(true);
+    const cardId = Number(this.form.value.cardId);
+    const amount = this.form.value.amount!;
+
     try {
-      const amount = this.form.value.amount!;
-      await this.auth.topUpBalance(amount);
+      if (this.activeTab() === 'deposit') {
+        await this.payment.deposit(cardId, amount);
+        // Refresh card list so new balance is shown
+        await this.loadCards();
+      } else {
+        const walletUserId = this.auth.user()?.walletUserId;
+        await this.payment.transfer(cardId, amount, walletUserId);
+        await this.auth.loadUserBalance();
+      }
       this.success.set(true);
       setTimeout(() => {
         this.success.set(false);
@@ -247,12 +352,10 @@ export class WalletModalComponent implements OnChanges {
         this.form.reset();
       }, 2000);
     } catch (err: unknown) {
-      let msg = this.t.instant('WALLET.TOP_UP_BTN');
+      let msg = this.t.instant('WALLET.PAYMENT_ERROR');
       if (err instanceof HttpErrorResponse) {
-        const detail = err.error?.error ?? err.error?.message ?? null;
-        msg = typeof detail === 'string' && detail.trim()
-          ? detail
-          : `Error ${err.status}. Try again.`;
+        const detail = err.error?.error ?? err.error?.message ?? err.error;
+        msg = typeof detail === 'string' && detail.trim() ? detail : `Error ${err.status}`;
       } else if (err instanceof Error) {
         msg = err.message;
       }

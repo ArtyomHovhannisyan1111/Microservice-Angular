@@ -4,7 +4,7 @@ import { RouterLink, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Product } from '../../core/models/product.model';
 import { ProductService } from '../../core/services/product.service';
 import { CartService } from '../../core/services/cart.service';
@@ -150,7 +150,7 @@ import { ProductCardComponent } from './product-card/product-card.component';
           </svg>
           <span class="text-sm font-medium">{{ toastMessage() }}</span>
           <a routerLink="/cart" class="text-primary-400 dark:text-primary-600 text-sm hover:underline flex-shrink-0">
-            Корзина
+            {{ 'CART.TITLE' | translate }}
           </a>
         </div>
       }
@@ -164,12 +164,13 @@ import { ProductCardComponent } from './product-card/product-card.component';
   `]
 })
 export class CatalogComponent implements OnInit {
-  private productService = inject(ProductService);
-  private cartService    = inject(CartService);
-  private route          = inject(ActivatedRoute);
-  private router         = inject(Router);
-  private destroyRef     = inject(DestroyRef);
-  readonly auth          = inject(AuthService);
+  private productService  = inject(ProductService);
+  private cartService     = inject(CartService);
+  private route           = inject(ActivatedRoute);
+  private router          = inject(Router);
+  private destroyRef      = inject(DestroyRef);
+  private translateService = inject(TranslateService);
+  readonly auth           = inject(AuthService);
 
   readonly loading          = signal(true);
   readonly filteredProducts = signal<Product[]>([]);
@@ -254,14 +255,14 @@ export class CatalogComponent implements OnInit {
 
   onAddToCart(product: Product): void {
     this.cartService.addToCart(product);
-    this.showToast(`«${product.name}» добавлен в корзину`);
+    this.showToast(`«${product.name}» ${this.translateService.instant('CATALOG.ADDED_TO_CART')}`);
   }
 
   async onDeleteProduct(productId: string): Promise<void> {
     await firstValueFrom(this.productService.deleteProduct(productId));
     this.allProducts = this.allProducts.filter(p => p.id !== productId);
     this.filterProducts();
-    this.showToast('Товар удалён');
+    this.showToast(this.translateService.instant('CATALOG.PRODUCT_DELETED'));
   }
 
   private showToast(msg: string): void {

@@ -42,8 +42,6 @@ class ProductServiceTest {
                 .quantity(10).category("Электроника").build();
     }
 
-    // ── saveProduct ───────────────────────────────────────────────────────────
-
     @Nested @DisplayName("saveProduct()")
     class SaveProduct {
 
@@ -75,8 +73,6 @@ class ProductServiceTest {
             then(kafkaTemplate).shouldHaveNoInteractions();
         }
     }
-
-    // ── decreaseStock ─────────────────────────────────────────────────────────
 
     @Nested @DisplayName("decreaseStock()")
     class DecreaseStock {
@@ -110,8 +106,6 @@ class ProductServiceTest {
         }
     }
 
-    // ── increaseStock ─────────────────────────────────────────────────────────
-
     @Nested @DisplayName("increaseStock()")
     class IncreaseStock {
 
@@ -126,8 +120,6 @@ class ProductServiceTest {
             then(kafkaTemplate).should().send(anyString(), eq(1), any());
         }
     }
-
-    // ── searchProducts ────────────────────────────────────────────────────────
 
     @Nested @DisplayName("searchProducts()")
     class SearchProducts {

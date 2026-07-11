@@ -19,6 +19,7 @@ import java.math.BigDecimal;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -35,21 +36,23 @@ class BalanceServiceTest {
     void setUp() {
         card = PaymentMethod.builder()
                 .id(10L).userId(42L).maskedNumber("**** 1234")
-                .providerName("Visa").type("CARD").accountToken("tok").cardholderName("Ivan").cvv("123").build();
+                .providerName("Visa").type("CARD").accountToken("tok")
+                .cardholderName("Ivan").cvv("123").active(true).build();
 
         request = new TopUpRequest();
         request.setPaymentMethodId(10L);
         request.setAmount(new BigDecimal("3000"));
     }
 
-    @Nested @DisplayName("validateTopUp()")
-    class ValidateTopUp {
+    @Nested @DisplayName("depositToCard()")
+    class DepositToCard {
 
-        @Test @DisplayName("владелец карты запрашивает пополнение → возвращает TopUpResponse")
-        void givenOwner_whenTopUp_thenReturnsResponse() {
+        @Test @DisplayName("владелец карты пополняет → возвращает TopUpResponse")
+        void givenOwner_whenDeposit_thenReturnsResponse() {
             given(repo.findById(10L)).willReturn(Optional.of(card));
+            given(repo.save(any())).willReturn(card);
 
-            TopUpResponse response = service.validateTopUp(42L, request);
+            TopUpResponse response = service.depositToCard(42L, request);
 
             assertThat(response.getCardId()).isEqualTo(10L);
             assertThat(response.getMaskedPan()).isEqualTo("**** 1234");
@@ -58,19 +61,19 @@ class BalanceServiceTest {
         }
 
         @Test @DisplayName("карта не существует → CardNotFoundException")
-        void givenMissingCard_whenTopUp_thenThrows() {
+        void givenMissingCard_whenDeposit_thenThrows() {
             given(repo.findById(10L)).willReturn(Optional.empty());
 
-            assertThatThrownBy(() -> service.validateTopUp(42L, request))
+            assertThatThrownBy(() -> service.depositToCard(42L, request))
                     .isInstanceOf(CardNotFoundException.class)
                     .hasMessageContaining("10");
         }
 
         @Test @DisplayName("чужой userId → CardAccessDeniedException")
-        void givenWrongUser_whenTopUp_thenThrows() {
+        void givenWrongUser_whenDeposit_thenThrows() {
             given(repo.findById(10L)).willReturn(Optional.of(card));
 
-            assertThatThrownBy(() -> service.validateTopUp(99L, request))
+            assertThatThrownBy(() -> service.depositToCard(99L, request))
                     .isInstanceOf(CardAccessDeniedException.class);
         }
     }

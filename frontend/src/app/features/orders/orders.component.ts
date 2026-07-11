@@ -76,7 +76,7 @@ import { Order } from '../../core/models/order.model';
                     </span>
                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
                                  {{ orderService.getStatusColor(order.status) }}">
-                      {{ orderService.getStatusLabel(order.status) }}
+                      {{ orderService.getStatusLabel(order.status) | translate }}
                     </span>
                   </div>
                   <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">

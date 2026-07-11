@@ -2,9 +2,10 @@ import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { TranslateModule } from '@ngx-translate/core';
 import { OrderService } from '../../core/services/order.service';
 import { ProductService } from '../../core/services/product.service';
+import { ImageService } from '../../core/services/image.service';
 import { Order, OrderStatus } from '../../core/models/order.model';
 import { Product } from '../../core/models/product.model';
 import { ImageUrlPipe, IMAGE_PLACEHOLDER } from '../../core/pipes/image-url.pipe';
@@ -34,10 +35,10 @@ type Tab = 'orders' | 'products';
 
       <!-- Stats row -->
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-        @for (stat of stats(); track stat.label) {
+        @for (stat of stats(); track stat.labelKey) {
           <div class="card p-4 text-center">
             <p class="text-2xl font-bold" [class]="stat.color">{{ stat.value }}</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ stat.label }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ stat.labelKey | translate }}</p>
           </div>
         }
       </div>
@@ -60,7 +61,7 @@ type Tab = 'orders' | 'products';
         </button>
       </div>
 
-      <!-- ── ORDERS TAB ─────────────────────────────────────────────────────── -->
+      <!-- ORDERS TAB -->
       @if (activeTab() === 'orders') {
         @if (loadingOrders()) {
           <div class="space-y-3">
@@ -96,7 +97,7 @@ type Tab = 'orders' | 'products';
                         {{ order.id }}
                       </td>
                       <td class="px-4 py-3 text-gray-600 dark:text-gray-300">
-                        {{ order.userName ?? ('Пользователь #' + order.userId) }}
+                        {{ order.userName ?? ('ADMIN_ORDERS.UNKNOWN_USER' | translate: { id: order.userId }) }}
                       </td>
                       <td class="px-4 py-3 text-gray-500 dark:text-gray-400">
                         #{{ order.productId }} × {{ order.quantity }}
@@ -107,10 +108,7 @@ type Tab = 'orders' | 'products';
                       <td class="px-4 py-3 text-center">
                         <select [value]="order.status"
                                 (change)="onStatusChange(order, $event)"
-                                class="text-xs rounded-lg border border-gray-300 dark:border-gray-600
-                                       bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300
-                                       px-2 py-1 cursor-pointer focus:outline-none focus:ring-1
-                                       focus:ring-primary-500">
+                                class="text-xs rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-2 py-1 cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary-500">
                           <option value="pending">{{ 'STATUS.PENDING' | translate }}</option>
                           <option value="processing">{{ 'STATUS.PROCESSING' | translate }}</option>
                           <option value="shipped">{{ 'STATUS.SHIPPED' | translate }}</option>
@@ -127,53 +125,81 @@ type Tab = 'orders' | 'products';
         }
       }
 
-      <!-- ── PRODUCTS TAB ────────────────────────────────────────────────────── -->
+      <!-- PRODUCTS TAB -->
       @if (activeTab() === 'products') {
-        <!-- Add product form -->
         <div class="card p-6 mb-6">
           <h3 class="font-semibold text-gray-900 dark:text-white mb-4">{{ 'ADMIN.ADD_PRODUCT_TITLE' | translate }}</h3>
           <form [formGroup]="productForm" (ngSubmit)="addProduct()" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{{ 'ADMIN.PRODUCT_NAME' | translate }}</label>
-              <input formControlName="name" type="text" class="input-field" placeholder="Название товара"
+              <input formControlName="name" type="text" class="input-field"
+                     [placeholder]="'ADMIN.PRODUCT_NAME_PH' | translate"
                      [class.border-red-500]="pf['name'].invalid && pf['name'].touched">
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{{ 'ADMIN.CATEGORY' | translate }}</label>
               <select formControlName="category" class="input-field">
-                <option value="" disabled>Выберите категорию</option>
+                <option value="" disabled>{{ 'ADMIN.SELECT_CATEGORY' | translate }}</option>
                 @for (cat of categories; track cat) {
-                  <option [value]="cat">{{ cat }}</option>
+                  <option [value]="cat">{{ catKey(cat) | translate }}</option>
                 }
               </select>
             </div>
             <div class="sm:col-span-2">
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Описание</label>
-              <input formControlName="description" type="text" class="input-field" placeholder="Описание товара">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{{ 'ADMIN.DESCRIPTION' | translate }}</label>
+              <input formControlName="description" type="text" class="input-field" [placeholder]="'ADMIN.DESCRIPTION_PH' | translate">
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Цена (₽)</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{{ 'ADMIN.PRICE' | translate }}</label>
               <input formControlName="price" type="number" class="input-field" placeholder="0" min="0">
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Остаток (шт.)</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{{ 'ADMIN.STOCK' | translate }}</label>
               <input formControlName="stock" type="number" class="input-field" placeholder="0" min="0">
             </div>
+
+            <!-- Image field with upload button -->
             <div class="sm:col-span-2">
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                URL изображения
-                <span class="text-xs text-gray-400 font-normal ml-1">(полный URL или /images/product.jpg)</span>
+                {{ 'ADMIN.IMAGE_URL' | translate }}
               </label>
-              <input formControlName="imageUrl" type="text" class="input-field"
-                     placeholder="https://... или /images/product.jpg">
+              <div class="flex gap-2">
+                <input formControlName="imageUrl" type="text" class="input-field flex-1"
+                       [placeholder]="'ADMIN.IMAGE_URL_PH' | translate">
+                <button type="button"
+                        (click)="imgFileInput.click()"
+                        [disabled]="imgUploading"
+                        class="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 transition-colors">
+                  @if (imgUploading) {
+                    <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                    {{ imgProgress }}%
+                  } @else {
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                    </svg>
+                    {{ 'ADMIN.UPLOAD_IMAGE' | translate }}
+                  }
+                </button>
+              </div>
+              <input #imgFileInput type="file" accept=".jpg,.jpeg,.png,.webp" class="hidden"
+                     (change)="onImageFileChange($event)">
+              @if (pf['imageUrl'].value) {
+                <img [src]="pf['imageUrl'].value | imageUrl"
+                     class="mt-2 h-16 w-16 rounded-lg object-cover border border-gray-200 dark:border-gray-700"
+                     (error)="onImgError($event)">
+              }
             </div>
+
             <div class="sm:col-span-2 flex items-center gap-3">
               <button type="submit" [disabled]="productForm.invalid || addingProduct()"
                       class="btn-primary flex items-center gap-2">
                 @if (addingProduct()) {
                   <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
                   </svg>
                 }
                 {{ (addingProduct() ? 'ADMIN.ADDING' : 'CATALOG.ADD_PRODUCT') | translate }}
@@ -181,16 +207,15 @@ type Tab = 'orders' | 'products';
               @if (addSuccess()) {
                 <span class="text-sm text-green-600 dark:text-green-400 flex items-center gap-1">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                   </svg>
-                  Товар добавлен
+                  {{ 'ADMIN.PRODUCT_ADDED' | translate }}
                 </span>
               }
             </div>
           </form>
         </div>
 
-        <!-- Products table -->
         @if (loadingProducts()) {
           <div class="card p-8 text-center">
             <div class="animate-spin w-8 h-8 border-2 border-primary-600 border-t-transparent rounded-full mx-auto"></div>
@@ -201,10 +226,10 @@ type Tab = 'orders' | 'products';
               <table class="w-full text-sm">
                 <thead class="bg-gray-50 dark:bg-gray-700/50">
                   <tr>
-                    <th class="text-left px-4 py-3 font-semibold text-gray-700 dark:text-gray-300">Товар</th>
-                    <th class="text-left px-4 py-3 font-semibold text-gray-700 dark:text-gray-300">Категория</th>
-                    <th class="text-right px-4 py-3 font-semibold text-gray-700 dark:text-gray-300">Цена</th>
-                    <th class="text-center px-4 py-3 font-semibold text-gray-700 dark:text-gray-300">Остаток</th>
+                    <th class="text-left px-4 py-3 font-semibold text-gray-700 dark:text-gray-300">{{ 'ADMIN.COL_PRODUCT' | translate }}</th>
+                    <th class="text-left px-4 py-3 font-semibold text-gray-700 dark:text-gray-300">{{ 'ADMIN.CATEGORY' | translate }}</th>
+                    <th class="text-right px-4 py-3 font-semibold text-gray-700 dark:text-gray-300">{{ 'ADMIN.COL_PRICE' | translate }}</th>
+                    <th class="text-center px-4 py-3 font-semibold text-gray-700 dark:text-gray-300">{{ 'ADMIN.COL_STOCK' | translate }}</th>
                     <th class="text-center px-4 py-3 font-semibold text-gray-700 dark:text-gray-300"></th>
                   </tr>
                 </thead>
@@ -225,19 +250,16 @@ type Tab = 'orders' | 'products';
                         {{ product.price | number:'1.0-0' }} ₽
                       </td>
                       <td class="px-4 py-3 text-center">
-                        <span [class]="product.stock > 0
-                          ? 'text-green-600 dark:text-green-400'
-                          : 'text-red-500'">
+                        <span [class]="product.stock > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-500'">
                           {{ product.stock }}
                         </span>
                       </td>
                       <td class="px-4 py-3 text-center">
                         <button (click)="onDeleteProduct(product.id)"
-                                class="text-red-400 hover:text-red-600 dark:hover:text-red-400
-                                       transition-colors p-1 rounded">
+                                class="text-red-400 hover:text-red-600 dark:hover:text-red-400 transition-colors p-1 rounded">
                           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                           </svg>
                         </button>
                       </td>
@@ -255,23 +277,39 @@ type Tab = 'orders' | 'products';
 export class AdminPanelComponent implements OnInit {
   private orderService   = inject(OrderService);
   private productService = inject(ProductService);
+  private imageService   = inject(ImageService);
   private fb             = inject(FormBuilder);
 
   readonly categories = this.productService.getCategories();
 
-  readonly activeTab      = signal<Tab>('orders');
-  readonly orders         = signal<Order[]>([]);
-  readonly products       = signal<Product[]>([]);
-  readonly loadingOrders  = signal(true);
+  private static readonly CATEGORY_KEYS: Record<string, string> = {
+    'Электроника': 'CATEGORIES.ELECTRONICS',
+    'Периферия':   'CATEGORIES.PERIPHERALS',
+    'Мониторы':    'CATEGORIES.MONITORS',
+    'Аудио':       'CATEGORIES.AUDIO',
+    'Аксессуары':  'CATEGORIES.ACCESSORIES',
+  };
+
+  catKey(cat: string): string {
+    return AdminPanelComponent.CATEGORY_KEYS[cat] ?? cat;
+  }
+
+  readonly activeTab       = signal<Tab>('orders');
+  readonly orders          = signal<Order[]>([]);
+  readonly products        = signal<Product[]>([]);
+  readonly loadingOrders   = signal(true);
   readonly loadingProducts = signal(true);
-  readonly addingProduct  = signal(false);
-  readonly addSuccess     = signal(false);
+  readonly addingProduct   = signal(false);
+  readonly addSuccess      = signal(false);
+
+  imgUploading = false;
+  imgProgress  = 0;
 
   readonly stats = signal([
-    { label: 'Всего заказов',     value: 0, color: 'text-primary-600 dark:text-primary-400' },
-    { label: 'Ожидают',           value: 0, color: 'text-yellow-600 dark:text-yellow-400' },
-    { label: 'Доставлено',        value: 0, color: 'text-green-600 dark:text-green-400'   },
-    { label: 'Товаров в каталоге', value: 0, color: 'text-purple-600 dark:text-purple-400' },
+    { labelKey: 'ADMIN.TOTAL_ORDERS', value: 0, color: 'text-primary-600 dark:text-primary-400' },
+    { labelKey: 'ADMIN.PENDING',      value: 0, color: 'text-yellow-600 dark:text-yellow-400'  },
+    { labelKey: 'ADMIN.DELIVERED',    value: 0, color: 'text-green-600 dark:text-green-400'    },
+    { labelKey: 'ADMIN.CATALOG_COUNT',value: 0, color: 'text-purple-600 dark:text-purple-400'  },
   ]);
 
   productForm = this.fb.group({
@@ -291,8 +329,6 @@ export class AdminPanelComponent implements OnInit {
     this.loadProducts();
   }
 
-  // ─── Orders ────────────────────────────────────────────────────────────────
-
   private loadOrders(): void {
     this.orderService.getAllOrders().subscribe({
       next: orders => {
@@ -310,8 +346,6 @@ export class AdminPanelComponent implements OnInit {
     this.orders.update(list => list.map(o => o.id === updated.id ? updated : o));
     this.updateStats(this.orders(), this.products().length);
   }
-
-  // ─── Products ──────────────────────────────────────────────────────────────
 
   private loadProducts(): void {
     this.productService.getProducts().subscribe({
@@ -354,14 +388,30 @@ export class AdminPanelComponent implements OnInit {
     this.updateStats(this.orders(), this.products().length);
   }
 
-  // ─── Stats ─────────────────────────────────────────────────────────────────
+  onImageFileChange(event: Event): void {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    this.imgUploading = true;
+    this.imgProgress  = 0;
+    this.imageService.upload(file, 'products').subscribe({
+      next: e => {
+        if (e.type === 'progress') {
+          this.imgProgress = e.progress;
+        } else {
+          this.pf['imageUrl'].setValue('/api/image/' + e.response.fileName);
+          this.imgUploading = false;
+        }
+      },
+      error: () => { this.imgUploading = false; }
+    });
+  }
 
   private updateStats(orders: Order[], productCount: number): void {
     this.stats.set([
-      { label: 'Всего заказов',     value: orders.length,                               color: 'text-primary-600 dark:text-primary-400' },
-      { label: 'Ожидают',           value: orders.filter(o => o.status === 'pending').length, color: 'text-yellow-600 dark:text-yellow-400' },
-      { label: 'Доставлено',        value: orders.filter(o => o.status === 'delivered').length, color: 'text-green-600 dark:text-green-400' },
-      { label: 'Товаров в каталоге', value: productCount,                                color: 'text-purple-600 dark:text-purple-400' },
+      { labelKey: 'ADMIN.TOTAL_ORDERS', value: orders.length,                                       color: 'text-primary-600 dark:text-primary-400' },
+      { labelKey: 'ADMIN.PENDING',      value: orders.filter(o => o.status === 'pending').length,   color: 'text-yellow-600 dark:text-yellow-400'  },
+      { labelKey: 'ADMIN.DELIVERED',    value: orders.filter(o => o.status === 'delivered').length, color: 'text-green-600 dark:text-green-400'    },
+      { labelKey: 'ADMIN.CATALOG_COUNT',value: productCount,                                        color: 'text-purple-600 dark:text-purple-400'  },
     ]);
   }
 

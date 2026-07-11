@@ -32,8 +32,6 @@ class UserServiceTest {
         user = new User(1L, "ivan", "ivan@mail.ru", "hashed", "USER", new BigDecimal("5000.00"));
     }
 
-    // ── topUpBalance ──────────────────────────────────────────────────────────
-
     @Nested @DisplayName("topUpBalance()")
     class TopUp {
 
@@ -56,8 +54,6 @@ class UserServiceTest {
             then(userRepository).shouldHaveNoInteractions();
         }
     }
-
-    // ── deductBalance ─────────────────────────────────────────────────────────
 
     @Nested @DisplayName("deductBalance()")
     class Deduct {
@@ -92,8 +88,6 @@ class UserServiceTest {
                     .isInstanceOf(RuntimeException.class);
         }
     }
-
-    // ── registeredUser ────────────────────────────────────────────────────────
 
     @Nested @DisplayName("registeredUser()")
     class Register {

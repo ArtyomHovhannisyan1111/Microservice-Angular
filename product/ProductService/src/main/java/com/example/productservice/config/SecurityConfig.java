@@ -33,8 +33,6 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // Gateway enforces authentication — trust all incoming requests here.
-                        // PUT /stock/* is called by order-service via Feign (no token).
                         .requestMatchers(HttpMethod.PUT, "/api/products/*/stock/decrease").permitAll()
                         .requestMatchers(HttpMethod.PUT, "/api/products/*/stock/increase").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()

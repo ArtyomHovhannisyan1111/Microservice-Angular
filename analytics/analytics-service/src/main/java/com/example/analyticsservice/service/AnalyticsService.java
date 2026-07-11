@@ -14,6 +14,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.*;
@@ -27,8 +29,6 @@ public class AnalyticsService {
     private final ProductStatisticsRepository repository;
     private final AnalyticsConfig             analyticsConfig;
     private final ExternalDataService         externalDataService;
-
-    // ─── Kafka consumer ───────────────────────────────────────────────────────
 
     @Transactional
     public void processOrderPlaced(OrderPlacedEvent event) {
@@ -51,8 +51,6 @@ public class AnalyticsService {
         }
     }
 
-    // ─── Legacy endpoint ──────────────────────────────────────────────────────
-
     @Transactional(readOnly = true)
     public DashboardResponse getDashboard() {
         double totalRevenue = repository.sumTotalRevenue();
@@ -60,20 +58,26 @@ public class AnalyticsService {
         return new DashboardResponse(totalRevenue, repository.findTopBySales(PageRequest.of(0, limit)));
     }
 
-    // ─── Summary ──────────────────────────────────────────────────────────────
-
     public DashboardSummaryResponse getSummary() {
-        double totalRevenue   = repository.sumTotalRevenue();
         List<OrderDto> orders = externalDataService.getAllOrders();
         long totalProducts    = externalDataService.getTotalProducts();
+
+        double kafkaRevenue = repository.sumTotalRevenue();
+        double restRevenue  = orders.stream()
+                .filter(o -> o.getTotalPrice() != null)
+                .mapToDouble(o -> o.getTotalPrice().doubleValue())
+                .sum();
+        double totalRevenue = BigDecimal.valueOf(kafkaRevenue > 0 ? kafkaRevenue : restRevenue)
+                .setScale(2, RoundingMode.HALF_UP)
+                .doubleValue();
+
+        int currentMonth = YearMonth.now().getMonthValue();
+        int prevMonth    = currentMonth == 1 ? 12 : currentMonth - 1;
 
         long totalCustomers = orders.stream()
                 .filter(o -> o.getUserId() != null)
                 .map(OrderDto::getUserId)
                 .distinct().count();
-
-        int currentMonth = YearMonth.now().getMonthValue();
-        int prevMonth    = currentMonth == 1 ? 12 : currentMonth - 1;
 
         long thisMonth = orders.stream()
                 .filter(o -> o.getCreatedAt() != null && o.getCreatedAt().getMonthValue() == currentMonth)
@@ -84,25 +88,51 @@ public class AnalyticsService {
 
         double ordersGrowth = lastMonth > 0
                 ? Math.round((double) (thisMonth - lastMonth) / lastMonth * 1000.0) / 10.0
-                : 0;
+                : (thisMonth > 0 ? 100.0 : 0.0);
+
+        double thisMonthRevenue = orders.stream()
+                .filter(o -> o.getCreatedAt() != null && o.getCreatedAt().getMonthValue() == currentMonth
+                             && o.getTotalPrice() != null)
+                .mapToDouble(o -> o.getTotalPrice().doubleValue())
+                .sum();
+        double lastMonthRevenue = orders.stream()
+                .filter(o -> o.getCreatedAt() != null && o.getCreatedAt().getMonthValue() == prevMonth
+                             && o.getTotalPrice() != null)
+                .mapToDouble(o -> o.getTotalPrice().doubleValue())
+                .sum();
+        double revenueGrowth = lastMonthRevenue > 0
+                ? Math.round((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue * 1000.0) / 10.0
+                : (thisMonthRevenue > 0 ? 100.0 : 0.0);
+
+        long thisMonthCustomers = orders.stream()
+                .filter(o -> o.getUserId() != null && o.getCreatedAt() != null
+                             && o.getCreatedAt().getMonthValue() == currentMonth)
+                .map(OrderDto::getUserId)
+                .distinct().count();
+        long lastMonthCustomers = orders.stream()
+                .filter(o -> o.getUserId() != null && o.getCreatedAt() != null
+                             && o.getCreatedAt().getMonthValue() == prevMonth)
+                .map(OrderDto::getUserId)
+                .distinct().count();
+        double customersGrowth = lastMonthCustomers > 0
+                ? Math.round((double) (thisMonthCustomers - lastMonthCustomers) / lastMonthCustomers * 1000.0) / 10.0
+                : (thisMonthCustomers > 0 ? 100.0 : 0.0);
 
         return DashboardSummaryResponse.builder()
-                .totalRevenue(Math.round(totalRevenue * 100.0) / 100.0)
-                .revenueGrowth(0)
+                .totalRevenue(totalRevenue)
+                .revenueGrowth(revenueGrowth)
                 .totalOrders(orders.size())
                 .ordersGrowth(ordersGrowth)
                 .totalCustomers(totalCustomers)
-                .customersGrowth(0)
+                .customersGrowth(customersGrowth)
                 .totalProducts(totalProducts)
                 .productsGrowth(0)
                 .build();
     }
 
-    // ─── Monthly revenue ──────────────────────────────────────────────────────
-
     public List<MonthlyDataResponse> getMonthlyRevenue() {
         List<OrderDto> orders  = externalDataService.getAllOrders();
-        String[] months        = {"Янв","Фев","Мар","Апр","Май","Июн","Июл","Авг","Сен","Окт","Ноя","Дек"};
+        String[] months        = {"1","2","3","4","5","6","7","8","9","10","11","12"};
         Map<String, Double> rv = new LinkedHashMap<>();
         for (String m : months) rv.put(m, 0.0);
 
@@ -120,11 +150,9 @@ public class AnalyticsService {
                 .collect(Collectors.toList());
     }
 
-    // ─── Monthly orders ───────────────────────────────────────────────────────
-
     public List<MonthlyDataResponse> getMonthlyOrders() {
         List<OrderDto> orders = externalDataService.getAllOrders();
-        String[] months       = {"Янв","Фев","Мар","Апр","Май","Июн","Июл","Авг","Сен","Окт","Ноя","Дек"};
+        String[] months       = {"1","2","3","4","5","6","7","8","9","10","11","12"};
         Map<String, Long> cnt = new LinkedHashMap<>();
         for (String m : months) cnt.put(m, 0L);
 
@@ -138,8 +166,7 @@ public class AnalyticsService {
                 .collect(Collectors.toList());
     }
 
-    // ─── Sales by category ────────────────────────────────────────────────────
-
+    @Transactional(readOnly = true)
     public List<CategorySalesResponse> getCategorySales() {
         List<ProductStatistics> stats      = repository.findAll();
         List<Map<String, Object>> products = externalDataService.getAllProducts();
@@ -173,16 +200,13 @@ public class AnalyticsService {
                 .collect(Collectors.toList());
     }
 
-    // ─── Top products ─────────────────────────────────────────────────────────
-
+    @Transactional(readOnly = true)
     public List<TopProductResponse> getTopProducts() {
         int limit = analyticsConfig.getDashboard().getTopProductsLimit();
         return repository.findTopBySales(PageRequest.of(0, limit)).stream()
                 .map(p -> new TopProductResponse(p.getProductName(), p.getTotalSoldQuantity(), p.getTotalRevenue()))
                 .collect(Collectors.toList());
     }
-
-    // ─── Order statuses ───────────────────────────────────────────────────────
 
     public List<OrderStatusResponse> getOrderStatuses() {
         List<OrderDto> orders = externalDataService.getAllOrders();
@@ -195,21 +219,16 @@ public class AnalyticsService {
                         Collectors.counting()));
 
         long total = orders.size();
-        Map<String, String> labels = Map.of(
-                "PENDING", "Ожидание", "PAID", "Оплачен", "SHIPPED", "Отправлен",
-                "DELIVERED", "Доставлен", "CANCELLED", "Отменён");
 
         return counts.entrySet().stream()
                 .map(e -> new OrderStatusResponse(
                         e.getKey().toLowerCase(),
-                        labels.getOrDefault(e.getKey(), e.getKey()),
+                        e.getKey().toLowerCase(),
                         e.getValue(),
                         Math.round((double) e.getValue() / total * 1000.0) / 10.0))
                 .sorted(Comparator.comparingLong(OrderStatusResponse::getCount).reversed())
                 .collect(Collectors.toList());
     }
-
-    // ─── Recent orders ────────────────────────────────────────────────────────
 
     public List<RecentOrderResponse> getRecentOrders(int limit) {
         List<OrderDto> orders = externalDataService.getAllOrders();
@@ -228,6 +247,6 @@ public class AnalyticsService {
     private String resolveCustomerName(OrderDto o) {
         if (o.getUserName() != null && !o.getUserName().isBlank()) return o.getUserName();
         if (o.getUserEmail() != null && !o.getUserEmail().isBlank()) return o.getUserEmail();
-        return "Пользователь " + o.getUserId();
+        return "#" + o.getUserId();
     }
 }

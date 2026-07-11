@@ -25,11 +25,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-/**
- * Unit-тесты Web-слоя. Поднимается только MVC-контекст (без БД, Kafka, Feign).
- * @WebMvcTest автоматически включает @ControllerAdvice, поэтому GlobalExceptionHandler
- * подхватывается без дополнительных настроек.
- */
 @WebMvcTest(OrderController.class)
 @Import(GlobalExceptionHandler.class)
 @DisplayName("OrderController")
@@ -39,8 +34,6 @@ class OrderControllerTest {
     @Autowired ObjectMapper objectMapper;
 
     @MockBean OrderService orderService;
-
-    // ── Фабричные методы ──────────────────────────────────────────────────────
 
     private OrderRequest validRequest() {
         OrderRequest r = new OrderRequest();
@@ -64,8 +57,6 @@ class OrderControllerTest {
                 .build();
     }
 
-    // ── POST /api/orders ──────────────────────────────────────────────────────
-
     @Nested
     @DisplayName("POST /api/orders")
     class CreateOrder {
@@ -73,10 +64,8 @@ class OrderControllerTest {
         @Test
         @DisplayName("валидный запрос → 201 Created с телом заказа")
         void givenValidRequest_whenCreateOrder_thenReturns201() throws Exception {
-            // Arrange
             given(orderService.createOrder(any())).willReturn(savedOrder());
 
-            // Act & Assert
             mockMvc.perform(post("/api/orders")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(validRequest())))
@@ -89,11 +78,9 @@ class OrderControllerTest {
         @Test
         @DisplayName("пустой requestId → 400 Bad Request с сообщением валидации")
         void givenBlankRequestId_whenCreateOrder_thenReturns400() throws Exception {
-            // Arrange
             OrderRequest bad = validRequest();
-            bad.setRequestId("");        // @NotBlank
+            bad.setRequestId("");
 
-            // Act & Assert
             mockMvc.perform(post("/api/orders")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(bad)))
@@ -104,11 +91,9 @@ class OrderControllerTest {
         @Test
         @DisplayName("quantity = 0 → 400 Bad Request (@Positive)")
         void givenZeroQuantity_whenCreateOrder_thenReturns400() throws Exception {
-            // Arrange
             OrderRequest bad = validRequest();
-            bad.setQuantity(0);          // @Positive
+            bad.setQuantity(0);
 
-            // Act & Assert
             mockMvc.perform(post("/api/orders")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(bad)))
@@ -119,11 +104,9 @@ class OrderControllerTest {
         @Test
         @DisplayName("quantity > 1000 → 400 Bad Request (@Max)")
         void givenQuantityOverMax_whenCreateOrder_thenReturns400() throws Exception {
-            // Arrange
             OrderRequest bad = validRequest();
-            bad.setQuantity(1001);       // @Max(1000)
+            bad.setQuantity(1001);
 
-            // Act & Assert
             mockMvc.perform(post("/api/orders")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(bad)))
@@ -134,11 +117,9 @@ class OrderControllerTest {
         @Test
         @DisplayName("null userId → 400 Bad Request (@NotNull)")
         void givenNullUserId_whenCreateOrder_thenReturns400() throws Exception {
-            // Arrange
             OrderRequest bad = validRequest();
-            bad.setUserId(null);         // @NotNull
+            bad.setUserId(null);
 
-            // Act & Assert
             mockMvc.perform(post("/api/orders")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(bad)))
@@ -147,8 +128,6 @@ class OrderControllerTest {
         }
     }
 
-    // ── GET /api/orders/{id} ──────────────────────────────────────────────────
-
     @Nested
     @DisplayName("GET /api/orders/{id}")
     class GetOrderById {
@@ -156,10 +135,8 @@ class OrderControllerTest {
         @Test
         @DisplayName("существующий id → 200 OK с заказом")
         void givenExistingId_whenGetById_thenReturns200() throws Exception {
-            // Arrange
             given(orderService.getOrderById(1)).willReturn(savedOrder());
 
-            // Act & Assert
             mockMvc.perform(get("/api/orders/1"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(1))
@@ -169,11 +146,9 @@ class OrderControllerTest {
         @Test
         @DisplayName("несуществующий id → 404 Not Found через GlobalExceptionHandler")
         void givenMissingId_whenGetById_thenReturns404() throws Exception {
-            // Arrange
             given(orderService.getOrderById(999))
                     .willThrow(new ResourceNotFoundException("Order not found with id: 999"));
 
-            // Act & Assert
             mockMvc.perform(get("/api/orders/999"))
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.error").value("Order not found with id: 999"));

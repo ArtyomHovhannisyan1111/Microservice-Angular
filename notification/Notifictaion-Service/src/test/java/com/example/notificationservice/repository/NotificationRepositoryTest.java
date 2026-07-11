@@ -26,7 +26,6 @@ class NotificationRepositoryTest {
         Notification n = Notification.builder()
                 .userId(userId).title(title).message("msg")
                 .totalPrice(BigDecimal.TEN).isRead(false).build();
-        // createdAt устанавливается через @PrePersist, но при прямом persistAndFlush задаём вручную
         n.setCreatedAt(time);
         return n;
     }
@@ -34,11 +33,9 @@ class NotificationRepositoryTest {
     @BeforeEach
     void seed() {
         LocalDateTime base = LocalDateTime.now();
-        // userId=1 — 3 уведомления
         em.persistAndFlush(build(1L, "Заказ создан",     base.minusMinutes(30)));
         em.persistAndFlush(build(1L, "Заказ подтверждён", base.minusMinutes(20)));
         em.persistAndFlush(build(1L, "Заказ отменён",    base.minusMinutes(10)));
-        // userId=2 — 1 уведомление
         em.persistAndFlush(build(2L, "Заказ создан",     base.minusMinutes(5)));
         em.clear();
     }
@@ -51,7 +48,6 @@ class NotificationRepositoryTest {
             List<Notification> result = repo.findByUserIdOrderByCreatedAtDesc(1L);
 
             assertThat(result).hasSize(3);
-            // первый = самый новый
             assertThat(result.get(0).getTitle()).isEqualTo("Заказ отменён");
             assertThat(result.get(2).getTitle()).isEqualTo("Заказ создан");
         }
@@ -75,7 +71,6 @@ class NotificationRepositoryTest {
             List<Notification> result = repo.findTop20ByOrderByCreatedAtDesc();
 
             assertThat(result).hasSize(4);
-            // первый самый новый (userId=2, minusMinutes 5)
             assertThat(result.get(0).getUserId()).isEqualTo(2L);
         }
     }

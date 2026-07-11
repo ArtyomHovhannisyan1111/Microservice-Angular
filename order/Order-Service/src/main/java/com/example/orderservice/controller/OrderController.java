@@ -8,6 +8,7 @@ import com.example.orderservice.service.OrderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -65,5 +66,11 @@ public class OrderController {
             @PathVariable Integer id,
             @RequestBody ConfirmOrderRequest request) {
         return orderService.confirmOrder(id, request.getUserEmail(), request.getUserName());
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteOrder(@PathVariable Integer id) {
+        orderService.deleteOrder(id);
     }
 }

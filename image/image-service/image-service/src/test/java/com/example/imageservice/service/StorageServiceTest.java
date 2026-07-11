@@ -39,8 +39,6 @@ class StorageServiceTest {
         ReflectionTestUtils.setField(storageService, "bucketName", "test-bucket");
     }
 
-    // ── upload ────────────────────────────────────────────────────────────────
-
     @Nested @DisplayName("upload()")
     class Upload {
 
@@ -104,8 +102,6 @@ class StorageServiceTest {
             assertThatNoException().isThrownBy(() -> storageService.upload(webp, "banners"));
         }
     }
-
-    // ── downloadImage ─────────────────────────────────────────────────────────
 
     @Nested @DisplayName("downloadImage()")
     class Download {

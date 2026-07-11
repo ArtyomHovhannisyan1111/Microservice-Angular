@@ -54,10 +54,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // Auth — public
                         .requestMatchers("/auth/**", "/api/auth/**", "/error").permitAll()
-
-                        // Products — GET public; write ops require authentication (product-service enforces roles)
                         .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
                         .requestMatchers("/api/products/**").hasAnyRole("USER", "ADMIN")
 

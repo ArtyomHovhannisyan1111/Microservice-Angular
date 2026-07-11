@@ -14,17 +14,17 @@ import java.util.List;
 @RequiredArgsConstructor
 public class PaymentMethodService {
     private final PaymentMethodRepository paymentMethodRepository;
-    private final PaymentMethodMapper paymnentMethodMapper;
+    private final PaymentMethodMapper paymentMethodMapper;
 
     public PaymentMethodResponse save(PaymentMethodRequest paymentMethodRequest) {
-        PaymentMethod paymentMethod=paymnentMethodMapper.toEntity(paymentMethodRequest);
+        PaymentMethod paymentMethod=paymentMethodMapper.toEntity(paymentMethodRequest);
         PaymentMethod save=paymentMethodRepository.save(paymentMethod);
-        return paymnentMethodMapper.toResponse(save);
+        return paymentMethodMapper.toResponse(save);
     }
     public List<PaymentMethodResponse> getMethodsByUserId(Long userId) {
        return paymentMethodRepository.findByUserId(userId).stream()
-               .map(paymnentMethodMapper::toResponse)
+               .filter(PaymentMethod::isActive)
+               .map(paymentMethodMapper::toResponse)
                .toList();
-
     }
 }

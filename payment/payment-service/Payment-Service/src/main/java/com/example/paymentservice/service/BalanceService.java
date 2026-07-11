@@ -1,34 +1,77 @@
 package com.example.paymentservice.service;
 
-import com.example.paymentservice.Exception.CardAccessDeniedException;
 import com.example.paymentservice.Exception.CardNotFoundException;
+import com.example.paymentservice.Util.PaymentMathUtils;
 import com.example.paymentservice.dto.TopUpRequest;
 import com.example.paymentservice.dto.TopUpResponse;
 import com.example.paymentservice.model.PaymentMethod;
 import com.example.paymentservice.repository.PaymentMethodRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestClient;
+
+import java.math.BigDecimal;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 public class BalanceService {
 
     private final PaymentMethodRepository paymentMethodRepository;
+    private final RestClient restClient;
 
-    public TopUpResponse validateTopUp(Long userId, TopUpRequest request) {
-        PaymentMethod paymentMethod = paymentMethodRepository.findById(request.getPaymentMethodId())
+    @Value("${USER_SERVICE_URL:http://localhost:8092}")
+    private String userServiceUrl;
+
+    @Transactional
+    public TopUpResponse depositToCard(Long userId, TopUpRequest request) {
+        PaymentMethod card = paymentMethodRepository.findById(request.getPaymentMethodId())
                 .orElseThrow(() -> new CardNotFoundException(request.getPaymentMethodId()));
 
-        if (!paymentMethod.getUserId().equals(userId)) {
-            throw new CardAccessDeniedException(request.getPaymentMethodId(), userId);
-        }
+        PaymentMathUtils.validateOwner(card, userId);
+        PaymentMathUtils.validateActive(card);
+        PaymentMathUtils.validatePositiveAmount(request.getAmount());
 
+        BigDecimal current = card.getAmount() != null ? card.getAmount() : BigDecimal.ZERO;
+        card.setAmount(current.add(request.getAmount()));
+        paymentMethodRepository.save(card);
+
+        return buildResponse(card, request.getAmount(), "Средства зачислены на карту");
+    }
+
+    @Transactional
+    public TopUpResponse transferToUser(Long userId, TopUpRequest request) {
+        PaymentMethod card = paymentMethodRepository.findById(request.getPaymentMethodId())
+                .orElseThrow(() -> new CardNotFoundException(request.getPaymentMethodId()));
+
+        PaymentMathUtils.validateOwner(card, userId);
+        PaymentMathUtils.validateActive(card);
+        PaymentMathUtils.validatePositiveAmount(request.getAmount());
+        PaymentMathUtils.validateFunds(card.getAmount(), request.getAmount());
+
+        Long targetUserId = request.getWalletUserId() != null ? request.getWalletUserId() : userId;
+
+        restClient.put()
+                .uri(userServiceUrl + "/api/users/" + targetUserId + "/balance/top-up")
+                .body(Map.of("amount", request.getAmount()))
+                .retrieve()
+                .toBodilessEntity();
+
+        card.setAmount(card.getAmount().subtract(request.getAmount()));
+        paymentMethodRepository.save(card);
+
+        return buildResponse(card, request.getAmount(), "Փոխանցումը հաջողվեց");
+    }
+
+    private TopUpResponse buildResponse(PaymentMethod card, BigDecimal amount, String message) {
         return TopUpResponse.builder()
-                .cardId(paymentMethod.getId())
-                .maskedPan(paymentMethod.getMaskedNumber())
-                .brand(paymentMethod.getProviderName())
-                .amount(request.getAmount())
-                .message("Карта верифицирована успешно")
+                .cardId(card.getId())
+                .maskedPan(card.getMaskedNumber())
+                .brand(card.getProviderName())
+                .amount(amount)
+                .message(message)
                 .build();
     }
 }

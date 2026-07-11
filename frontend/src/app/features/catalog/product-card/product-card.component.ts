@@ -1,7 +1,8 @@
-import { Component, Input, Output, EventEmitter, signal, inject } from '@angular/core';
+import { Component, Input, Output, EventEmitter, signal, inject, computed, OnInit, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Product } from '../../../core/models/product.model';
 import { ImageUrlPipe, IMAGE_PLACEHOLDER } from '../../../core/pipes/image-url.pipe';
 import { AuthService } from '../../../core/services/auth.service';
@@ -53,7 +54,7 @@ import { AuthService } from '../../../core/services/auth.service';
       <div class="flex flex-col flex-1 p-4">
         <h3 class="font-semibold text-gray-900 dark:text-white line-clamp-1">{{ product.name }}</h3>
         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2 flex-1">
-          {{ product.description }}
+          {{ description() }}
         </p>
 
         <!-- Star rating -->
@@ -66,7 +67,7 @@ import { AuthService } from '../../../core/services/auth.service';
             </svg>
           }
           <span class="text-xs text-gray-500 dark:text-gray-400 ml-1">{{ product.rating }}</span>
-          <span class="text-xs text-gray-400 dark:text-gray-600 ml-1">({{ product.stock }} шт.)</span>
+          <span class="text-xs text-gray-400 dark:text-gray-600 ml-1">{{ 'PRODUCT.STOCK_COUNT' | translate: { count: product.stock } }}</span>
         </div>
 
         <!-- Price + Add to cart -->
@@ -104,16 +105,33 @@ import { AuthService } from '../../../core/services/auth.service';
     </div>
   `
 })
-export class ProductCardComponent {
+export class ProductCardComponent implements OnInit {
   @Input({ required: true }) product!: Product;
   @Output() addToCart    = new EventEmitter<Product>();
   @Output() deleteProduct = new EventEmitter<string>();
 
-  readonly auth   = inject(AuthService);
-  private  router = inject(Router);
-  readonly stars  = [0, 1, 2, 3, 4];
-  readonly added  = signal(false);
-  readonly Math   = Math;
+  readonly auth      = inject(AuthService);
+  private  router    = inject(Router);
+  private  translate = inject(TranslateService);
+  private  destroyRef = inject(DestroyRef);
+  readonly stars     = [0, 1, 2, 3, 4];
+  readonly added     = signal(false);
+  readonly Math      = Math;
+
+  private readonly currentLang = signal(this.translate.currentLang ?? 'ru');
+
+  readonly description = computed(() => {
+    this.currentLang();
+    const key = `PRODUCTS.DESC_${this.product.id}`;
+    const t = this.translate.instant(key);
+    return t !== key ? t : (this.product.description ?? '');
+  });
+
+  ngOnInit(): void {
+    this.translate.onLangChange
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(e => this.currentLang.set(e.lang));
+  }
 
   onAdd(): void {
     if (!this.auth.isAuthenticated()) {

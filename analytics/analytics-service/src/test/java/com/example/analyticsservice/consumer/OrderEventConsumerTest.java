@@ -25,15 +25,6 @@ import java.util.concurrent.TimeUnit;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-/**
- * Тест Kafka-консьюмера analytics-service.
- *
- * Стратегия: используем @EmbeddedKafka — встроенный брокер без Docker.
- * Это быстрее Testcontainers и подходит для unit/component-уровня.
- *
- * Схема: тест публикует OrderPlacedEvent в топик → консьюмер обрабатывает →
- * проверяем результат в PostgreSQL (H2 в тестах).
- */
 @SpringBootTest
 @ActiveProfiles("test")
 @EmbeddedKafka(
@@ -45,17 +36,15 @@ import static org.awaitility.Awaitility.await;
     }
 )
 @TestPropertySource(properties = {
-    // Направляем консьюмера на встроенный брокер
     "spring.kafka.consumer.auto-offset-reset=earliest",
     "spring.kafka.consumer.group-id=test-analytics-group",
-    // H2 вместо PostgreSQL
     "spring.datasource.url=jdbc:h2:mem:analyticstest;DB_CLOSE_DELAY=-1",
     "spring.datasource.driver-class-name=org.h2.Driver",
     "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
     "spring.jpa.hibernate.ddl-auto=create-drop",
     "spring.liquibase.enabled=false"
 })
-@DirtiesContext   // пересоздаём контекст после класса (чистим embedded Kafka)
+@DirtiesContext
 @DisplayName("OrderEventConsumer")
 class OrderEventConsumerTest {
 
@@ -70,8 +59,6 @@ class OrderEventConsumerTest {
         statsRepository.deleteAll();
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-
     @Nested
     @DisplayName("onOrderPlaced()")
     class OnOrderPlaced {
@@ -79,18 +66,14 @@ class OrderEventConsumerTest {
         @Test
         @DisplayName("новый товар → создаётся запись ProductStatistics")
         void givenNewProduct_whenEventConsumed_thenStatisticsCreated() throws Exception {
-            // ── Arrange ──────────────────────────────────────────────────────
             OrderPlacedEvent event = new OrderPlacedEvent(
                     1L,
                     List.of(new OrderItem(100L, "Ноутбук", 2, 50_000.0))
             );
             String json = objectMapper.writeValueAsString(event);
 
-            // ── Act ───────────────────────────────────────────────────────────
             kafkaTemplate.send(TOPIC, json);
 
-            // ── Assert ────────────────────────────────────────────────────────
-            // Awaitility ждёт асинхронного результата (консьюмер работает в другом потоке)
             await().atMost(10, TimeUnit.SECONDS)
                    .pollInterval(200, TimeUnit.MILLISECONDS)
                    .untilAsserted(() -> {
@@ -99,15 +82,13 @@ class OrderEventConsumerTest {
                        assertThat(stats).isPresent();
                        assertThat(stats.get().getProductName()).isEqualTo("Ноутбук");
                        assertThat(stats.get().getTotalSoldQuantity()).isEqualTo(2);
-                       assertThat(stats.get().getTotalRevenue()).isEqualTo(100_000.0); // 2 * 50000
+                       assertThat(stats.get().getTotalRevenue()).isEqualTo(100_000.0);
                    });
         }
 
         @Test
         @DisplayName("повторное событие по тому же товару → счётчики накапливаются")
         void givenExistingProduct_whenSecondEventConsumed_thenCountersAccumulate() throws Exception {
-            // ── Arrange ──────────────────────────────────────────────────────
-            // Сначала заполняем начальные данные напрямую (без Kafka)
             statsRepository.save(ProductStatistics.builder()
                     .productId(200L)
                     .productName("Мышь")
@@ -120,24 +101,21 @@ class OrderEventConsumerTest {
                     List.of(new OrderItem(200L, "Мышь", 3, 1_000.0))
             );
 
-            // ── Act ───────────────────────────────────────────────────────────
             kafkaTemplate.send(TOPIC, objectMapper.writeValueAsString(event));
 
-            // ── Assert ────────────────────────────────────────────────────────
             await().atMost(10, TimeUnit.SECONDS)
                    .pollInterval(200, TimeUnit.MILLISECONDS)
                    .untilAsserted(() -> {
                        ProductStatistics stats = statsRepository.findById(200L).orElseThrow();
 
-                       assertThat(stats.getTotalSoldQuantity()).isEqualTo(8);        // 5 + 3
-                       assertThat(stats.getTotalRevenue()).isEqualTo(8_000.0);       // 5000 + 3*1000
+                       assertThat(stats.getTotalSoldQuantity()).isEqualTo(8);
+                       assertThat(stats.getTotalRevenue()).isEqualTo(8_000.0);
                    });
         }
 
         @Test
         @DisplayName("событие с несколькими позициями → все товары обновлены")
         void givenMultipleItems_whenEventConsumed_thenAllStatisticsUpdated() throws Exception {
-            // ── Arrange ──────────────────────────────────────────────────────
             OrderPlacedEvent event = new OrderPlacedEvent(
                     3L,
                     List.of(
@@ -146,10 +124,8 @@ class OrderEventConsumerTest {
                     )
             );
 
-            // ── Act ───────────────────────────────────────────────────────────
             kafkaTemplate.send(TOPIC, objectMapper.writeValueAsString(event));
 
-            // ── Assert ────────────────────────────────────────────────────────
             await().atMost(10, TimeUnit.SECONDS)
                    .pollInterval(200, TimeUnit.MILLISECONDS)
                    .untilAsserted(() -> {

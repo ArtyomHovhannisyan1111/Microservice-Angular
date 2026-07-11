@@ -20,6 +20,7 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final ProductRepository productRepository;
 
+    @Transactional(readOnly = true)
     public List<ReviewResponse> getReviews(Integer productId) {
         findProduct(productId);
         return reviewRepository.findByProductIdOrderByCreatedAtDesc(productId)

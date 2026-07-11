@@ -29,8 +29,6 @@ class NotificationServiceTest {
 
     @InjectMocks NotificationService notificationService;
 
-    // ── consumeOrderEvent (Kafka) ─────────────────────────────────────────────
-
     @Nested @DisplayName("consumeOrderEvent()")
     class ConsumeOrderEvent {
 
@@ -49,8 +47,6 @@ class NotificationServiceTest {
             assertThat(saved.isRead()).isFalse();
         }
     }
-
-    // ── confirmOrder ──────────────────────────────────────────────────────────
 
     @Nested @DisplayName("confirmOrder()")
     class ConfirmOrder {
@@ -93,8 +89,6 @@ class NotificationServiceTest {
             then(notificationRepository).should().save(any(Notification.class));
         }
     }
-
-    // ── cancelOrder ───────────────────────────────────────────────────────────
 
     @Nested @DisplayName("cancelOrder()")
     class CancelOrder {

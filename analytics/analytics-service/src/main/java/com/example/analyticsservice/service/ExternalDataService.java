@@ -29,7 +29,7 @@ public class ExternalDataService {
             OrderDto[] orders = restTemplate.getForObject(orderServiceUrl + "/api/orders", OrderDto[].class);
             return orders != null ? Arrays.asList(orders) : List.of();
         } catch (Exception e) {
-            log.error("Failed to fetch orders: {}", e.getMessage());
+            log.error("Failed to fetch orders", e);
             return List.of();
         }
     }
@@ -43,7 +43,7 @@ public class ExternalDataService {
                 return ((Number) page.get("totalElements")).longValue();
             }
         } catch (Exception e) {
-            log.error("Failed to fetch product count: {}", e.getMessage());
+            log.error("Failed to fetch product count", e);
         }
         return 0;
     }
@@ -57,7 +57,7 @@ public class ExternalDataService {
                 return (List<Map<String, Object>>) page.get("content");
             }
         } catch (Exception e) {
-            log.error("Failed to fetch products: {}", e.getMessage());
+            log.error("Failed to fetch products", e);
         }
         return List.of();
     }

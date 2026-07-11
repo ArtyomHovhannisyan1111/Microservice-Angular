@@ -1,6 +1,8 @@
 package com.example.orderservice.service;
 
 import com.example.orderservice.Dto.NotificationConfirmRequest;
+import com.example.orderservice.Dto.OrderCreatedEvent;
+import com.example.orderservice.Dto.OrderPlacedEvent;
 import com.example.orderservice.Dto.OrderRequest;
 import com.example.orderservice.Dto.ProductResponse;
 import com.example.orderservice.Dto.StockUpdateRequest;
@@ -16,6 +18,7 @@ import com.example.orderservice.util.OrderValidationUtil;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,13 +31,16 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class OrderService {
 
+    private static final String ORDER_TOPIC         = "order-topic";
+    private static final String ORDER_PLACED_TOPIC  = "order-placed-topic";
+
     private final OrderRepository orderRepository;
     private final ProductFeignClient productFeignClient;
     private final NotificationFeignClient notificationFeignClient;
     private final UserServiceClient userServiceClient;
     private final RequestLogService requestLogService;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
-    // noRollbackFor: when balance is insufficient we commit the CANCELLED order record before propagating the exception
     @Transactional(rollbackFor = Exception.class, noRollbackFor = IllegalArgumentException.class)
     public Order createOrder(OrderRequest request) {
         if (requestLogService.isDuplicate(request.getRequestId())) {
@@ -55,7 +61,6 @@ public class OrderService {
             productFeignClient.increaseStock(request.getProductId(), new StockUpdateRequest(request.getQuantity()));
 
             if (e.status() == 400) {
-                // Insufficient funds: save CANCELLED order for history, send cancel email
                 Order cancelled = OrderMapper.toEntity(request);
                 cancelled.setStatus(OrderStatus.CANCELLED);
                 cancelled.setTotalPrice(total);
@@ -79,6 +84,8 @@ public class OrderService {
             requestLogService.logRequest(request.getRequestId());
             log.info("Order created: id={}, userId={}, productId={}, total={}",
                     saved.getId(), saved.getUserId(), saved.getProductId(), saved.getTotalPrice());
+
+            publishOrderEvents(saved, product);
             return saved;
         } catch (Exception e) {
             log.error("Order save failed after balance deduction, restoring stock: {}", e.getMessage());
@@ -153,8 +160,43 @@ public class OrderService {
         return order;
     }
 
+    @Transactional
+    public void deleteOrder(Integer id) {
+        Order order = findOrder(id);
+        orderRepository.delete(order);
+        log.info("Order deleted: id={}", id);
+    }
+
     private Order findOrder(Integer id) {
         return orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
+    }
+
+    private void publishOrderEvents(Order order, ProductResponse product) {
+        try {
+            kafkaTemplate.send(ORDER_TOPIC, new OrderCreatedEvent(
+                    order.getId().longValue(),
+                    order.getUserId() != null ? order.getUserId().longValue() : 0L,
+                    order.getTotalPrice(),
+                    order.getStatus().name()
+            ));
+        } catch (Exception e) {
+            log.warn("Failed to publish to {}: {}", ORDER_TOPIC, e.getMessage());
+        }
+
+        try {
+            var item = new OrderPlacedEvent.OrderItemEvent(
+                    product.getProductId() != null ? product.getProductId().longValue() : 0L,
+                    product.getName(),
+                    order.getQuantity(),
+                    product.getPrice() != null ? product.getPrice().doubleValue() : 0.0
+            );
+            kafkaTemplate.send(ORDER_PLACED_TOPIC, new OrderPlacedEvent(
+                    order.getId().longValue(),
+                    List.of(item)
+            ));
+        } catch (Exception e) {
+            log.warn("Failed to publish to {}: {}", ORDER_PLACED_TOPIC, e.getMessage());
+        }
     }
 }

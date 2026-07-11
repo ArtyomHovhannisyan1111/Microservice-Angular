@@ -4,6 +4,7 @@ import com.example.notificationservice.dto.ConfirmOrderRequest;
 import com.example.notificationservice.model.Notification;
 import com.example.notificationservice.repository.NotificationRepository;
 import com.example.notificationservice.service.NotificationService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -39,13 +40,13 @@ public class NotificationController {
     }
 
     @PostMapping("/confirm-order")
-    public ResponseEntity<Void> confirmOrder(@RequestBody ConfirmOrderRequest request) {
+    public ResponseEntity<Void> confirmOrder(@Valid @RequestBody ConfirmOrderRequest request) {
         notificationService.confirmOrder(request);
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/cancel-order")
-    public ResponseEntity<Void> cancelOrder(@RequestBody ConfirmOrderRequest request) {
+    public ResponseEntity<Void> cancelOrder(@Valid @RequestBody ConfirmOrderRequest request) {
         notificationService.cancelOrder(request);
         return ResponseEntity.ok().build();
     }

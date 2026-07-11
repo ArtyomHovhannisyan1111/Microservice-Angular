@@ -5,7 +5,8 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { forkJoin, of } from 'rxjs';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { forkJoin, of, Subscription } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import Chart from 'chart.js/auto';
 import { AnalyticsService } from '../../../core/services/analytics.service';
@@ -19,7 +20,7 @@ const STATUS_COLORS: Record<string, string> = {
 @Component({
   selector: 'app-analytics',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, TranslateModule],
   template: `
 <div class="min-h-screen bg-gray-50">
   <div class="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
@@ -37,8 +38,8 @@ const STATUS_COLORS: Record<string, string> = {
             </svg>
           </div>
           <div>
-            <h1 class="text-2xl font-bold text-gray-900 leading-tight">Analytics</h1>
-            <p class="text-sm text-gray-500">Admin Dashboard — обзор продаж и заказов</p>
+            <h1 class="text-2xl font-bold text-gray-900 leading-tight">{{ 'ANALYTICS.TITLE' | translate }}</h1>
+            <p class="text-sm text-gray-500">{{ 'ANALYTICS.SUBTITLE' | translate }}</p>
           </div>
         </div>
       </div>
@@ -52,7 +53,7 @@ const STATUS_COLORS: Record<string, string> = {
                   d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0
                      0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
           </svg>
-          Обновить
+          {{ 'COMMON.REFRESH' | translate }}
         </button>
         <button (click)="exportCSV()"
           class="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-emerald-700
@@ -85,7 +86,7 @@ const STATUS_COLORS: Record<string, string> = {
           [class]="selectedRange() === r.value
             ? 'px-4 py-1.5 rounded-lg text-sm font-semibold bg-indigo-600 text-white shadow-sm'
             : 'px-4 py-1.5 rounded-lg text-sm font-medium bg-white text-gray-600 border border-gray-200 hover:border-indigo-300 hover:text-indigo-600 transition-colors shadow-sm'">
-          {{ r.label }}
+          {{ r.labelKey | translate }}
         </button>
       }
     </div>
@@ -97,7 +98,7 @@ const STATUS_COLORS: Record<string, string> = {
       <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm card-hover">
         <div class="flex items-start justify-between">
           <div class="flex-1 min-w-0">
-            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Выручка</p>
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">{{ 'ANALYTICS.REVENUE' | translate }}</p>
             @if (loading()) {
               <div class="shimmer h-8 w-32 rounded-lg mb-2"></div>
               <div class="shimmer h-4 w-20 rounded"></div>
@@ -107,7 +108,7 @@ const STATUS_COLORS: Record<string, string> = {
               </p>
               <div class="flex items-center gap-1 mt-1">
                 <span [class]="growthClass(summary()?.revenueGrowth ?? 0)">
-                  {{ growth(summary()?.revenueGrowth ?? 0) }} vs прошлый месяц
+                  {{ growth(summary()?.revenueGrowth ?? 0) }} {{ 'ANALYTICS.VS_LAST_MONTH' | translate }}
                 </span>
               </div>
             }
@@ -127,7 +128,7 @@ const STATUS_COLORS: Record<string, string> = {
       <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm card-hover">
         <div class="flex items-start justify-between">
           <div class="flex-1 min-w-0">
-            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Заказы</p>
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">{{ 'ANALYTICS.ORDERS_KPI' | translate }}</p>
             @if (loading()) {
               <div class="shimmer h-8 w-24 rounded-lg mb-2"></div>
               <div class="shimmer h-4 w-20 rounded"></div>
@@ -157,7 +158,7 @@ const STATUS_COLORS: Record<string, string> = {
       <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm card-hover">
         <div class="flex items-start justify-between">
           <div class="flex-1 min-w-0">
-            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Клиенты</p>
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">{{ 'ANALYTICS.CUSTOMERS' | translate }}</p>
             @if (loading()) {
               <div class="shimmer h-8 w-24 rounded-lg mb-2"></div>
               <div class="shimmer h-4 w-20 rounded"></div>
@@ -187,7 +188,7 @@ const STATUS_COLORS: Record<string, string> = {
       <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm card-hover">
         <div class="flex items-start justify-between">
           <div class="flex-1 min-w-0">
-            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Товары</p>
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">{{ 'ANALYTICS.PRODUCTS_KPI' | translate }}</p>
             @if (loading()) {
               <div class="shimmer h-8 w-16 rounded-lg mb-2"></div>
               <div class="shimmer h-4 w-20 rounded"></div>
@@ -219,10 +220,10 @@ const STATUS_COLORS: Record<string, string> = {
       <div class="lg:col-span-2 bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
         <div class="flex items-center justify-between mb-4">
           <div>
-            <h3 class="text-sm font-semibold text-gray-900">Доход по месяцам</h3>
-            <p class="text-xs text-gray-400 mt-0.5">Динамика выручки за год</p>
+            <h3 class="text-sm font-semibold text-gray-900">{{ 'ANALYTICS.REVENUE_BY_MONTH' | translate }}</h3>
+            <p class="text-xs text-gray-400 mt-0.5">{{ 'ANALYTICS.REVENUE_DYNAMICS' | translate }}</p>
           </div>
-          <span class="text-xs font-medium px-2 py-1 bg-indigo-50 text-indigo-600 rounded-lg">2026</span>
+          <span class="text-xs font-medium px-2 py-1 bg-indigo-50 text-indigo-600 rounded-lg">{{ currentYear }}</span>
         </div>
         <div class="relative" style="height: 240px;">
           <canvas #revenueChart></canvas>
@@ -233,8 +234,8 @@ const STATUS_COLORS: Record<string, string> = {
       <!-- Order Status Donut -->
       <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
         <div class="mb-4">
-          <h3 class="text-sm font-semibold text-gray-900">Статусы заказов</h3>
-          <p class="text-xs text-gray-400 mt-0.5">Распределение по статусам</p>
+          <h3 class="text-sm font-semibold text-gray-900">{{ 'ANALYTICS.ORDER_STATUSES' | translate }}</h3>
+          <p class="text-xs text-gray-400 mt-0.5">{{ 'ANALYTICS.STATUS_DISTRIBUTION' | translate }}</p>
         </div>
         <div class="relative" style="height: 240px;">
           <canvas #statusChart></canvas>
@@ -250,8 +251,8 @@ const STATUS_COLORS: Record<string, string> = {
       <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
         <div class="flex items-center justify-between mb-4">
           <div>
-            <h3 class="text-sm font-semibold text-gray-900">Заказы по месяцам</h3>
-            <p class="text-xs text-gray-400 mt-0.5">Количество заказов</p>
+            <h3 class="text-sm font-semibold text-gray-900">{{ 'ANALYTICS.ORDERS_BY_MONTH' | translate }}</h3>
+            <p class="text-xs text-gray-400 mt-0.5">{{ 'ANALYTICS.ORDERS_COUNT_LABEL' | translate }}</p>
           </div>
         </div>
         <div class="relative" style="height: 220px;">
@@ -263,8 +264,8 @@ const STATUS_COLORS: Record<string, string> = {
       <!-- Category Pie -->
       <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
         <div class="mb-4">
-          <h3 class="text-sm font-semibold text-gray-900">Продажи по категориям</h3>
-          <p class="text-xs text-gray-400 mt-0.5">Доля каждой категории</p>
+          <h3 class="text-sm font-semibold text-gray-900">{{ 'ANALYTICS.SALES_BY_CATEGORY' | translate }}</h3>
+          <p class="text-xs text-gray-400 mt-0.5">{{ 'ANALYTICS.CATEGORY_SHARE' | translate }}</p>
         </div>
         <div class="relative" style="height: 220px;">
           <canvas #categoryChart></canvas>
@@ -277,8 +278,8 @@ const STATUS_COLORS: Record<string, string> = {
     <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
       <div class="flex items-center justify-between mb-4">
         <div>
-          <h3 class="text-sm font-semibold text-gray-900">Топ-10 товаров по продажам</h3>
-          <p class="text-xs text-gray-400 mt-0.5">Рейтинг по количеству продаж</p>
+          <h3 class="text-sm font-semibold text-gray-900">{{ 'ANALYTICS.TOP_PRODUCTS' | translate }}</h3>
+          <p class="text-xs text-gray-400 mt-0.5">{{ 'ANALYTICS.TOP_PRODUCTS_SUBTITLE' | translate }}</p>
         </div>
       </div>
       <div class="relative" style="height: 320px;">
@@ -293,9 +294,9 @@ const STATUS_COLORS: Record<string, string> = {
       <!-- Table Header -->
       <div class="flex flex-col sm:flex-row sm:items-center gap-3 p-5 border-b border-gray-100">
         <div class="flex-1">
-          <h3 class="text-sm font-semibold text-gray-900">Последние заказы</h3>
+          <h3 class="text-sm font-semibold text-gray-900">{{ 'ANALYTICS.RECENT_ORDERS' | translate }}</h3>
           <p class="text-xs text-gray-400 mt-0.5">
-            {{ filteredOrders().length }} из {{ recentOrders().length }} заказов
+            {{ 'ANALYTICS.SHOWING_ORDERS' | translate: { shown: filteredOrders().length, total: recentOrders().length } }}
           </p>
         </div>
         <div class="flex items-center gap-2 flex-wrap">
@@ -307,7 +308,7 @@ const STATUS_COLORS: Record<string, string> = {
                     d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
             </svg>
             <input [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)"
-                   type="text" placeholder="Поиск заказа..."
+                   type="text" [placeholder]="'ANALYTICS.SEARCH_ORDER' | translate"
                    class="pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg
                           focus:outline-none focus:ring-2 focus:ring-indigo-500/30
                           focus:border-indigo-400 bg-gray-50 w-44">
@@ -317,12 +318,12 @@ const STATUS_COLORS: Record<string, string> = {
                   class="px-3 py-2 text-sm border border-gray-200 rounded-lg
                          focus:outline-none focus:ring-2 focus:ring-indigo-500/30
                          focus:border-indigo-400 bg-gray-50 cursor-pointer">
-            <option value="all">Все статусы</option>
-            <option value="pending">Pending</option>
-            <option value="paid">Paid</option>
-            <option value="shipped">Shipped</option>
-            <option value="delivered">Delivered</option>
-            <option value="cancelled">Cancelled</option>
+            <option value="all">{{ 'ANALYTICS.ALL_STATUSES' | translate }}</option>
+            <option value="pending">{{ 'STATUS.PENDING' | translate }}</option>
+            <option value="paid">{{ 'STATUS.PAID' | translate }}</option>
+            <option value="shipped">{{ 'STATUS.SHIPPED' | translate }}</option>
+            <option value="delivered">{{ 'STATUS.DELIVERED' | translate }}</option>
+            <option value="cancelled">{{ 'STATUS.CANCELLED' | translate }}</option>
           </select>
         </div>
       </div>
@@ -332,11 +333,11 @@ const STATUS_COLORS: Record<string, string> = {
         <table class="w-full">
           <thead>
             <tr class="bg-gray-50 border-b border-gray-100">
-              <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Order ID</th>
-              <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Клиент</th>
-              <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider hidden sm:table-cell">Дата</th>
-              <th class="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Сумма</th>
-              <th class="text-center px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Статус</th>
+              <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">{{ 'ANALYTICS.COL_ORDER_ID' | translate }}</th>
+              <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">{{ 'ANALYTICS.COL_CLIENT' | translate }}</th>
+              <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider hidden sm:table-cell">{{ 'ANALYTICS.COL_DATE' | translate }}</th>
+              <th class="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">{{ 'ANALYTICS.COL_AMOUNT' | translate }}</th>
+              <th class="text-center px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">{{ 'ANALYTICS.COL_STATUS' | translate }}</th>
               <th class="px-5 py-3"></th>
             </tr>
           </thead>
@@ -361,9 +362,9 @@ const STATUS_COLORS: Record<string, string> = {
                             d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2
                                M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                     </svg>
-                    <p class="text-sm font-medium text-gray-400">Заказы не найдены</p>
+                    <p class="text-sm font-medium text-gray-400">{{ 'ANALYTICS.ORDERS_NOT_FOUND' | translate }}</p>
                     <button (click)="clearFilters()"
-                            class="text-xs text-indigo-600 hover:underline">Сбросить фильтры</button>
+                            class="text-xs text-indigo-600 hover:underline">{{ 'ADMIN_ORDERS.RESET_FILTERS' | translate }}</button>
                   </div>
                 </td>
               </tr>
@@ -394,14 +395,14 @@ const STATUS_COLORS: Record<string, string> = {
                     <span [class]="badgeClass(order.status)"
                           class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold">
                       <span class="w-1.5 h-1.5 rounded-full mr-1.5" [style.background]="statusDot(order.status)"></span>
-                      {{ statusLabel(order.status) }}
+                      {{ statusLabel(order.status) | translate }}
                     </span>
                   </td>
                   <td class="px-5 py-3.5 text-right">
                     <button class="px-3 py-1.5 text-xs font-medium text-indigo-600
                                    bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors
                                    opacity-0 group-hover:opacity-100">
-                      Детали
+                      {{ 'ANALYTICS.DETAILS' | translate }}
                     </button>
                   </td>
                 </tr>
@@ -436,6 +437,9 @@ const STATUS_COLORS: Record<string, string> = {
 })
 export class AnalyticsComponent implements AfterViewInit, OnDestroy {
   private svc = inject(AnalyticsService);
+  private translate = inject(TranslateService);
+
+  readonly currentYear = new Date().getFullYear();
 
   // ── State ──────────────────────────────────────────────────
   readonly loading       = signal(true);
@@ -456,10 +460,10 @@ export class AnalyticsComponent implements AfterViewInit, OnDestroy {
   });
 
   readonly ranges = [
-    { value: 'today'    as DateRange, label: 'Сегодня'      },
-    { value: 'last7'    as DateRange, label: 'Последние 7 д.' },
-    { value: 'last30'   as DateRange, label: 'Последние 30 д.' },
-    { value: 'thisYear' as DateRange, label: 'Этот год'      },
+    { value: 'today'    as DateRange, labelKey: 'ANALYTICS.RANGE_TODAY'    },
+    { value: 'last7'    as DateRange, labelKey: 'ANALYTICS.RANGE_LAST7'    },
+    { value: 'last30'   as DateRange, labelKey: 'ANALYTICS.RANGE_LAST30'   },
+    { value: 'thisYear' as DateRange, labelKey: 'ANALYTICS.RANGE_THIS_YEAR' },
   ];
 
   readonly skeletonRows = [1,2,3,4,5];
@@ -472,15 +476,18 @@ export class AnalyticsComponent implements AfterViewInit, OnDestroy {
   @ViewChild('statusChart')   statusRef!:   ElementRef<HTMLCanvasElement>;
 
   private charts: Record<string, Chart> = {};
+  private langSub?: Subscription;
 
   // ── Lifecycle ──────────────────────────────────────────────
   ngAfterViewInit(): void {
     this.initAllCharts();
     this.loadData();
+    this.langSub = this.translate.onLangChange.subscribe(() => this.loadData());
   }
 
   ngOnDestroy(): void {
     Object.values(this.charts).forEach(c => c.destroy());
+    this.langSub?.unsubscribe();
   }
 
   // ── Public Actions ─────────────────────────────────────────
@@ -498,9 +505,16 @@ export class AnalyticsComponent implements AfterViewInit, OnDestroy {
 
   exportCSV(): void {
     const rows = [
-      ['Order ID', 'Клиент', 'Дата', 'Сумма', 'Статус'],
+      [
+        this.translate.instant('ANALYTICS.COL_ORDER_ID'),
+        this.translate.instant('ANALYTICS.COL_CLIENT'),
+        this.translate.instant('ANALYTICS.COL_DATE'),
+        this.translate.instant('ANALYTICS.COL_AMOUNT'),
+        this.translate.instant('ANALYTICS.COL_STATUS'),
+      ],
       ...this.recentOrders().map(o => [
-        o.id, o.customer, this.fmtDate(o.date), o.amount + ' ₽', this.statusLabel(o.status)
+        o.id, o.customer, this.fmtDate(o.date), o.amount + ' ₽',
+        this.translate.instant(this.statusLabel(o.status))
       ])
     ];
     const csv = rows.map(r => r.join(',')).join('\n');
@@ -538,7 +552,8 @@ export class AnalyticsComponent implements AfterViewInit, OnDestroy {
         this.summary.set(data.summary);
         this.recentOrders.set(data.recent);
 
-        const months = data.revenue.map(d => d.month);
+        const monthName = (m: string) => this.translate.instant('MONTHS.' + m);
+        const months = data.revenue.map(d => monthName(d.month));
         this.updateChart('revenue', months, [data.revenue.map(d => d.value)]);
         this.updateChart('orders',  months, [data.orders.map(d => d.value)]);
         this.updatePieChart('category', data.categories.map(d => d.category), data.categories.map(d => d.sales));
@@ -547,7 +562,7 @@ export class AnalyticsComponent implements AfterViewInit, OnDestroy {
           [data.products.map(d => d.sales)]
         );
         this.updatePieChart('status',
-          data.status.map(d => d.label),
+          data.status.map(d => this.translate.instant('STATUS.' + d.status.toUpperCase())),
           data.status.map(d => d.count),
           data.status.map(d => STATUS_COLORS[d.status] ?? P[0])
         );
@@ -733,8 +748,8 @@ export class AnalyticsComponent implements AfterViewInit, OnDestroy {
 
   statusLabel(s: OrderStatus): string {
     const map: Record<string, string> = {
-      pending: 'Pending', paid: 'Paid', shipped: 'Shipped',
-      delivered: 'Delivered', cancelled: 'Cancelled'
+      pending: 'STATUS.PENDING', paid: 'STATUS.PAID', shipped: 'STATUS.SHIPPED',
+      delivered: 'STATUS.DELIVERED', cancelled: 'STATUS.CANCELLED'
     };
     return map[s] ?? s;
   }

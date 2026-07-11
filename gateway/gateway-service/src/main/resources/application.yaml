@@ -26,12 +26,12 @@ spring:
                 - Path=/auth/**
 
             - id: notification-service
-              uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8087}
+              uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8098}
               predicates:
                 - Path=/api/notifications/**
 
             - id: notification-admin
-              uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8087}
+              uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8098}
               predicates:
                 - Path=/api/admin/**
 
@@ -51,12 +51,12 @@ spring:
                 - Path=/api/analytics/**
 
             - id: payment-service
-              uri: ${PAYMENT_SERVICE_URL:http://localhost:8085}
+              uri: ${PAYMENT_SERVICE_URL:http://localhost:8093}
               predicates:
                 - Path=/api/payment-methods/**
 
             - id: balance-service
-              uri: ${PAYMENT_SERVICE_URL:http://localhost:8085}
+              uri: ${PAYMENT_SERVICE_URL:http://localhost:8093}
               predicates:
                 - Path=/api/v1/balance/**
 

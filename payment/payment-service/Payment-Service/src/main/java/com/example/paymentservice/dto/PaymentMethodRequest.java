@@ -1,6 +1,8 @@
 package com.example.paymentservice.dto;
 
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,18 +18,19 @@ public class PaymentMethodRequest {
     @NotNull(message = "User Id cannot be Null")
     Long userId;
 
-    @NotNull(message = "Payemnt type is required")
+    @NotBlank(message = "Payment type is required")
     String type;
 
-    @NotNull(message = "Provider name is required")
+    @NotBlank(message = "Provider name is required")
     String providerName;
 
-    @NotNull(message = "Raw card or account number is required")
+    @NotBlank(message = "Raw card or account number is required")
     String rawNumber;
 
-    @NotNull(message = "Cardholder name is required")
+    @NotBlank(message = "Cardholder name is required")
     String cardholderName;
 
-    @NotNull(message = "CVV is required")
+    @NotBlank(message = "CVV is required")
+    @Pattern(regexp = "^[0-9]{3,4}$", message = "CVV must be 3 or 4 digits")
     String cvv;
 }

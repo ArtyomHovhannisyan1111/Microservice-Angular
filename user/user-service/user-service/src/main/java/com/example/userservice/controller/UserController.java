@@ -5,6 +5,7 @@ import com.example.userservice.dto.UserResponse;
 import com.example.userservice.mapper.UserMapper;
 import com.example.userservice.model.User;
 import com.example.userservice.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,7 +27,7 @@ public class UserController {
     private final UserMapper userMapper;
 
     @PostMapping("/register")
-    public ResponseEntity<UserResponse> registerUser(@RequestBody UserRegisterDto request) {
+    public ResponseEntity<UserResponse> registerUser(@Valid @RequestBody UserRegisterDto request) {
         User userEntity = userMapper.toEntity(request);
         User savedUser = userService.registeredUser(userEntity);
         return ResponseEntity.ok(userMapper.toResponse(savedUser));

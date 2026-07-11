@@ -74,17 +74,17 @@ export class OrderService {
   // ─── Helpers ─────────────────────────────────────────────────────────────────
 
   getStatusLabel(status: OrderStatus): string {
-    const labels: Record<string, string> = {
-      pending:    'Ожидает',
-      approved:   'Одобрен',
-      processing: 'Обрабатывается',
-      shipped:    'Отправлен',
-      delivered:  'Доставлен',
-      cancelled:  'Отменён',
-      confirmed:  'Подтверждён',
-      rejected:   'Отклонён'
+    const keys: Record<string, string> = {
+      pending:    'STATUS.PENDING',
+      approved:   'STATUS.APPROVED',
+      processing: 'STATUS.PROCESSING',
+      shipped:    'STATUS.SHIPPED',
+      delivered:  'STATUS.DELIVERED',
+      cancelled:  'STATUS.CANCELLED',
+      confirmed:  'STATUS.CONFIRMED',
+      rejected:   'STATUS.REJECTED',
     };
-    return labels[status] ?? status;
+    return keys[status] ?? status;
   }
 
   getStatusColor(status: OrderStatus): string {

@@ -3,9 +3,11 @@ package com.example.imageservice.controller;
 import com.example.imageservice.dto.ImageUploadResponse;
 import com.example.imageservice.dto.MultipleImageUploadResponse;
 import com.example.imageservice.service.StorageService;
+import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,6 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Validated
 @RestController
 @RequestMapping("/api/image")
 @RequiredArgsConstructor
@@ -44,9 +47,14 @@ public class ImageController {
                 new MultipleImageUploadResponse(uploads, uploads.size())
         );
     }
+
     @GetMapping(value = "/{folder}/{fileName}", produces = {MediaType.IMAGE_JPEG_VALUE, MediaType.IMAGE_PNG_VALUE})
-    public ResponseEntity<byte[]> download(@PathVariable String folder, @PathVariable String fileName) {
-        byte[] imageBytes= storageService.downloadImage(folder+"/"+fileName);
+    public ResponseEntity<byte[]> download(
+            @Pattern(regexp = "^[a-zA-Z0-9_-]+$", message = "Invalid folder name")
+            @PathVariable String folder,
+            @Pattern(regexp = "^[a-zA-Z0-9_.\\-]+$", message = "Invalid file name")
+            @PathVariable String fileName) {
+        byte[] imageBytes = storageService.downloadImage(folder + "/" + fileName);
         return ResponseEntity.ok().body(imageBytes);
     }
 }

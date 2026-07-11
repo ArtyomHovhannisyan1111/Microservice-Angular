@@ -15,4 +15,6 @@ public class TopUpRequest {
     @NotNull(message = "amount обязателен")
     @DecimalMin(value = "0.01", message = "Сумма должна быть больше 0")
     private BigDecimal amount;
+
+    private Long walletUserId;
 }

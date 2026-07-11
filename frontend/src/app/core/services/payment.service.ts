@@ -26,4 +26,16 @@ export class PaymentService {
       this.http.post<TopUpResponse>(`${this.baseUrl}/api/v1/balance/top-up`, { paymentMethodId, amount })
     );
   }
+
+  deposit(paymentMethodId: number, amount: number): Promise<TopUpResponse> {
+    return firstValueFrom(
+      this.http.post<TopUpResponse>(`${this.baseUrl}/api/v1/balance/deposit`, { paymentMethodId, amount })
+    );
+  }
+
+  transfer(paymentMethodId: number, amount: number, walletUserId?: number): Promise<TopUpResponse> {
+    return firstValueFrom(
+      this.http.post<TopUpResponse>(`${this.baseUrl}/api/v1/balance/transfer`, { paymentMethodId, amount, walletUserId })
+    );
+  }
 }

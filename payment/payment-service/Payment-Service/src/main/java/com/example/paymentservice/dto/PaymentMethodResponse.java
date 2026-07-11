@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -17,5 +19,5 @@ public class PaymentMethodResponse {
     private String maskedNumber;
     private String cardholderName;
     private boolean isActive;
-
+    private BigDecimal amount;
 }

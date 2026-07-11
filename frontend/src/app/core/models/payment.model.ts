@@ -14,6 +14,7 @@ export interface PaymentMethod {
   maskedNumber: string;
   cardholderName: string;
   active: boolean;
+  amount: number;
 }
 
 export interface PaymentMethodRequest {

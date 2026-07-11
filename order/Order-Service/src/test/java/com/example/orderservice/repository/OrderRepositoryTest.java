@@ -17,12 +17,6 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Интеграционный тест репозитория.
- * @DataJpaTest поднимает встроенный H2, применяет только JPA-слой —
- * контроллеры, сервисы и Kafka не загружаются.
- * Каждый тест выполняется в транзакции и откатывается после завершения.
- */
 @DataJpaTest
 @ActiveProfiles("test")
 @DisplayName("OrderRepository")
@@ -30,8 +24,6 @@ class OrderRepositoryTest {
 
     @Autowired TestEntityManager em;
     @Autowired OrderRepository   orderRepository;
-
-    // ── Фикстуры ──────────────────────────────────────────────────────────────
 
     private Order persist(Integer userId, OrderStatus status) {
         Order o = Order.builder()
@@ -51,8 +43,6 @@ class OrderRepositoryTest {
         persist(20, OrderStatus.PENDING);
     }
 
-    // ── findByUserId ──────────────────────────────────────────────────────────
-
     @Nested
     @DisplayName("findByUserId()")
     class FindByUserId {
@@ -60,10 +50,8 @@ class OrderRepositoryTest {
         @Test
         @DisplayName("возвращает только заказы указанного пользователя")
         void givenUserId10_thenReturnsHisTwoOrders() {
-            // Act
             List<Order> result = orderRepository.findByUserId(10);
 
-            // Assert
             assertThat(result)
                     .hasSize(2)
                     .allSatisfy(o -> assertThat(o.getUserId()).isEqualTo(10));
@@ -72,15 +60,11 @@ class OrderRepositoryTest {
         @Test
         @DisplayName("пользователь без заказов → пустой список")
         void givenUnknownUserId_thenReturnsEmptyList() {
-            // Act
             List<Order> result = orderRepository.findByUserId(999);
 
-            // Assert
             assertThat(result).isEmpty();
         }
     }
-
-    // ── findByStatus ──────────────────────────────────────────────────────────
 
     @Nested
     @DisplayName("findByStatus()")
@@ -89,10 +73,8 @@ class OrderRepositoryTest {
         @Test
         @DisplayName("PENDING → возвращает два заказа (от разных пользователей)")
         void givenStatusPending_thenReturnsTwoOrders() {
-            // Act
             List<Order> result = orderRepository.findByStatus(OrderStatus.PENDING);
 
-            // Assert
             assertThat(result)
                     .hasSize(2)
                     .allSatisfy(o -> assertThat(o.getStatus()).isEqualTo(OrderStatus.PENDING));
@@ -101,15 +83,11 @@ class OrderRepositoryTest {
         @Test
         @DisplayName("CANCELLED → пустой список (в сиде нет таких заказов)")
         void givenStatusCancelled_thenReturnsEmpty() {
-            // Act
             List<Order> result = orderRepository.findByStatus(OrderStatus.CANCELLED);
 
-            // Assert
             assertThat(result).isEmpty();
         }
     }
-
-    // ── save / findById ───────────────────────────────────────────────────────
 
     @Nested
     @DisplayName("save() + findById()")
@@ -118,7 +96,6 @@ class OrderRepositoryTest {
         @Test
         @DisplayName("сохранённый заказ находится по id с корректными полями")
         void givenNewOrder_whenSaved_thenFoundById() {
-            // Arrange
             Order newOrder = Order.builder()
                     .userId(30)
                     .productId(5)
@@ -128,14 +105,12 @@ class OrderRepositoryTest {
                     .userEmail("new@test.com")
                     .build();
 
-            // Act
             Order saved = orderRepository.save(newOrder);
             em.flush();
-            em.clear(); // выбрасываем из кэша — следующий поиск идёт в БД
+            em.clear();
 
             Order found = orderRepository.findById(saved.getId()).orElseThrow();
 
-            // Assert
             assertThat(found.getUserId()).isEqualTo(30);
             assertThat(found.getTotalPrice()).isEqualByComparingTo("4999.00");
             assertThat(found.getStatus()).isEqualTo(OrderStatus.PENDING);

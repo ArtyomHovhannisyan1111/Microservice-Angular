@@ -33,11 +33,11 @@ class BalanceControllerTest {
     @MockBean  BalanceService balanceService;
     @MockBean  JwtUtil        jwtUtil;
 
-    @Nested @DisplayName("POST /api/v1/balance/top-up")
-    class TopUp {
+    @Nested @DisplayName("POST /api/v1/balance/deposit")
+    class Deposit {
 
         @Test @DisplayName("валидный токен и запрос → 200 с TopUpResponse")
-        void givenValidRequest_whenTopUp_thenReturns200() throws Exception {
+        void givenValidRequest_whenDeposit_thenReturns200() throws Exception {
             TopUpRequest req = new TopUpRequest();
             req.setPaymentMethodId(10L);
             req.setAmount(new BigDecimal("500"));
@@ -49,9 +49,9 @@ class BalanceControllerTest {
             resp.setBrand("Visa");
 
             given(jwtUtil.extractUserId("Bearer token123")).willReturn(42L);
-            given(balanceService.validateTopUp(anyLong(), any())).willReturn(resp);
+            given(balanceService.depositToCard(anyLong(), any())).willReturn(resp);
 
-            mockMvc.perform(post("/api/v1/balance/top-up")
+            mockMvc.perform(post("/api/v1/balance/deposit")
                             .header("Authorization", "Bearer token123")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(mapper.writeValueAsString(req)))
@@ -61,14 +61,13 @@ class BalanceControllerTest {
         }
 
         @Test @DisplayName("null amount → 400 Bad Request")
-        void givenNullAmount_whenTopUp_thenReturns400() throws Exception {
+        void givenNullAmount_whenDeposit_thenReturns400() throws Exception {
             TopUpRequest bad = new TopUpRequest();
             bad.setPaymentMethodId(10L);
-            // amount = null
 
             given(jwtUtil.extractUserId(any())).willReturn(42L);
 
-            mockMvc.perform(post("/api/v1/balance/top-up")
+            mockMvc.perform(post("/api/v1/balance/deposit")
                             .header("Authorization", "Bearer token")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(mapper.writeValueAsString(bad)))

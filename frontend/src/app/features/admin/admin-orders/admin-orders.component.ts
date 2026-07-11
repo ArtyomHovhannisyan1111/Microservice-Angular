@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { OrderService } from '../../../core/services/order.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { Order, OrderStatus } from '../../../core/models/order.model';
@@ -161,7 +161,7 @@ import { Order, OrderStatus } from '../../../core/models/order.model';
                   @for (h of tableHeaders; track h) {
                     <th class="px-4 py-3.5 text-left text-xs font-semibold text-gray-600
                                dark:text-gray-400 uppercase tracking-wide">
-                      {{ h }}
+                      {{ h | translate }}
                     </th>
                   }
                 </tr>
@@ -191,7 +191,7 @@ import { Order, OrderStatus } from '../../../core/models/order.model';
                         </div>
                         <div class="min-w-0">
                           <p class="font-medium text-gray-900 dark:text-white truncate max-w-[140px]">
-                            {{ order.userName ?? ('Пользователь #' + order.userId) }}
+                            {{ order.userName ?? ('ADMIN_ORDERS.UNKNOWN_USER' | translate: { id: order.userId }) }}
                           </p>
                           @if (order.userEmail) {
                             <p class="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[140px]">
@@ -369,7 +369,7 @@ import { Order, OrderStatus } from '../../../core/models/order.model';
                     #{{ order.id }}
                   </p>
                   <p class="text-sm text-gray-600 dark:text-gray-300 mt-0.5">
-                    {{ order.userName ?? ('Пользователь #' + order.userId) }}
+                    {{ order.userName ?? ('ADMIN_ORDERS.UNKNOWN_USER' | translate: { id: order.userId }) }}
                   </p>
                 </div>
                 <div class="text-right shrink-0">
@@ -378,7 +378,7 @@ import { Order, OrderStatus } from '../../../core/models/order.model';
                   </p>
                   <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
                                {{ orderService.getStatusColor(order.status) }}">
-                    {{ orderService.getStatusLabel(order.status) }}
+                    {{ orderService.getStatusLabel(order.status) | translate }}
                   </span>
                 </div>
               </div>
@@ -449,6 +449,7 @@ import { Order, OrderStatus } from '../../../core/models/order.model';
 export class AdminOrdersComponent implements OnInit {
   readonly orderService = inject(OrderService);
   readonly auth         = inject(AuthService);
+  private readonly translate = inject(TranslateService);
 
   // ─── Состояние ────────────────────────────────────────────────────────────
 
@@ -534,7 +535,7 @@ export class AdminOrdersComponent implements OnInit {
       const orders = await firstValueFrom(this.orderService.getAllOrders());
       this.allOrders.set(orders);
     } catch {
-      this.error.set('Не удалось загрузить заказы. Проверьте соединение с сервером.');
+      this.error.set(this.translate.instant('ADMIN_ORDERS.LOAD_ERROR'));
     } finally {
       this.loading.set(false);
     }
@@ -561,7 +562,7 @@ export class AdminOrdersComponent implements OnInit {
       );
       this.allOrders.update(list => list.map(o => o.id === updated.id ? updated : o));
     } catch {
-      this.error.set(`Не удалось изменить статус заказа ${order.id}`);
+      this.error.set(this.translate.instant('ADMIN_ORDERS.STATUS_CHANGE_ERROR', { id: order.id }));
     }
   }
 
@@ -581,10 +582,12 @@ export class AdminOrdersComponent implements OnInit {
       this.allOrders.update(list =>
         list.map(o => o.id === order.id ? { ...o, status: 'confirmed' as OrderStatus } : o)
       );
-      const emailHint = order.userEmail ? ` → ${order.userEmail}` : '';
-      this.showConfirmToast(`Заказ ${order.id} подтверждён. Email отправлен${emailHint}`);
+      const msg = order.userEmail
+        ? this.translate.instant('ADMIN_ORDERS.CONFIRM_SUCCESS_EMAIL', { id: order.id, email: order.userEmail })
+        : this.translate.instant('ADMIN_ORDERS.CONFIRM_SUCCESS', { id: order.id });
+      this.showConfirmToast(msg);
     } catch {
-      this.error.set(`Не удалось подтвердить заказ ${order.id}. Проверьте соединение с сервером.`);
+      this.error.set(this.translate.instant('ADMIN_ORDERS.CONFIRM_ERROR', { id: order.id }));
     } finally {
       this.confirming.set(null);
     }
@@ -622,7 +625,7 @@ export class AdminOrdersComponent implements OnInit {
       this.allOrders.update(list => list.filter(o => o.id !== order.id));
       this.closeModal();
     } catch {
-      this.error.set(`Ошибка при удалении заказа ${order.id}. Попробуйте ещё раз.`);
+      this.error.set(this.translate.instant('ADMIN_ORDERS.DELETE_ERROR', { id: order.id }));
     } finally {
       this.deleting.set(false);
     }
