@@ -30,7 +30,7 @@ export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
 
-  private readonly GW = `http://${window.location.hostname}:8080`;
+  private readonly GW = '';
 
   readonly user = this._user.asReadonly();
   readonly role = this._role.asReadonly();
