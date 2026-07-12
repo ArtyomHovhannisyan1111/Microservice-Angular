@@ -76,29 +76,30 @@ jobs:
             echo "changed=false" >> $GITHUB_OUTPUT
           fi
 
+      # Matrix includes dockerfile path so docker-build-push uses the correct Dockerfile per service
       - name: Формируем JSON-матрицу изменённых сервисов
         id: build-matrix
         run: |
           services=()
 
           [[ "${{ steps.filter.outputs.auth }}" == "true" ]] && \
-            services+=('{"name":"auth-service","path":"auth2/auth-service"}')
+            services+=('{"name":"auth-service","path":"auth2/auth-service","dockerfile":"gateway/Dockerfile"}')
           [[ "${{ steps.filter.outputs.gateway }}" == "true" ]] && \
-            services+=('{"name":"gateway-service","path":"gateway/gateway-service"}')
+            services+=('{"name":"gateway-service","path":"gateway/gateway-service","dockerfile":"gateway/Dockerfile"}')
           [[ "${{ steps.filter.outputs.product }}" == "true" ]] && \
-            services+=('{"name":"product-service","path":"product/ProductService"}')
+            services+=('{"name":"product-service","path":"product/ProductService","dockerfile":"product/Dockerfile"}')
           [[ "${{ steps.filter.outputs.order }}" == "true" ]] && \
-            services+=('{"name":"order-service","path":"order/Order-Service"}')
+            services+=('{"name":"order-service","path":"order/Order-Service","dockerfile":"order/Dockerfile"}')
           [[ "${{ steps.filter.outputs.user }}" == "true" ]] && \
-            services+=('{"name":"user-service","path":"user/user-service/user-service"}')
+            services+=('{"name":"user-service","path":"user/user-service/user-service","dockerfile":"user/Dockerfile"}')
           [[ "${{ steps.filter.outputs.notification }}" == "true" ]] && \
-            services+=('{"name":"notification-service","path":"notification/Notifictaion-Service"}')
+            services+=('{"name":"notification-service","path":"notification/Notifictaion-Service","dockerfile":"notification/Dockerfile"}')
           [[ "${{ steps.filter.outputs.payment }}" == "true" ]] && \
-            services+=('{"name":"payment-service","path":"payment/payment-service/Payment-Service"}')
+            services+=('{"name":"payment-service","path":"payment/payment-service/Payment-Service","dockerfile":"payment/payment-service/Payment-Service/Dockerfile"}')
           [[ "${{ steps.filter.outputs.image }}" == "true" ]] && \
-            services+=('{"name":"image-service","path":"image/image-service/image-service"}')
+            services+=('{"name":"image-service","path":"image/image-service/image-service","dockerfile":"image/Dockerfile"}')
           [[ "${{ steps.filter.outputs.analytics }}" == "true" ]] && \
-            services+=('{"name":"analytics-service","path":"analytics/analytics-service"}')
+            services+=('{"name":"analytics-service","path":"analytics/analytics-service","dockerfile":"analytics/analytics-service/Dockerfile"}')
 
           if [ ${#services[@]} -eq 0 ]; then
             echo 'matrix={"include":[]}' >> $GITHUB_OUTPUT
@@ -201,6 +202,7 @@ jobs:
           retention-days: 7
 
 
+  # Builds and pushes only the services that actually changed (dynamic matrix from detect-changes)
   docker-build-push:
     name: "Docker — ${{ matrix.name }}"
     needs: [ detect-changes, build-backend ]
@@ -210,17 +212,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - { name: auth-service,         path: auth2/auth-service,                          dockerfile: auth2/auth-service/Dockerfile }
-          - { name: gateway-service,       path: gateway/gateway-service,                     dockerfile: gateway/Dockerfile }
-          - { name: product-service,       path: product/ProductService,                      dockerfile: product/Dockerfile }
-          - { name: order-service,         path: order/Order-Service,                         dockerfile: order/Dockerfile }
-          - { name: user-service,          path: user/user-service/user-service,              dockerfile: user/Dockerfile }
-          - { name: notification-service,  path: notification/Notifictaion-Service,           dockerfile: notification/Dockerfile }
-          - { name: payment-service,       path: payment/payment-service/Payment-Service,     dockerfile: payment/payment-service/Payment-Service/Dockerfile }
-          - { name: image-service,         path: image/image-service/image-service,           dockerfile: image/Dockerfile }
-          - { name: analytics-service,     path: analytics/analytics-service,                 dockerfile: analytics/analytics-service/Dockerfile }
+      matrix: ${{ fromJson(needs.detect-changes.outputs.backend-matrix) }}
     steps:
       - uses: actions/checkout@v4
       - name: Логин в Docker Hub
@@ -289,11 +281,13 @@ jobs:
   deploy:
     name: "Деплой на сервер"
     needs: [ docker-build-push, docker-build-push-frontend ]
+    # Deploy only when at least one Docker image was actually built and pushed
     if: |
       always() &&
       (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') &&
       !contains(needs.*.result, 'failure') &&
-      !contains(needs.*.result, 'cancelled')
+      !contains(needs.*.result, 'cancelled') &&
+      (needs.docker-build-push.result == 'success' || needs.docker-build-push-frontend.result == 'success')
     runs-on: ubuntu-latest
     steps:
       - name: Деплой через SSH
@@ -307,12 +301,20 @@ jobs:
 
             git pull origin master
 
-            # Обновляем DOCKER_HUB_USER в .env
-            if grep -q "DOCKER_HUB_USER" .env; then
-              sed -i "s/DOCKER_HUB_USER=.*/DOCKER_HUB_USER=${{ secrets.DOCKER_USERNAME }}/" .env
-            else
-              echo "DOCKER_HUB_USER=${{ secrets.DOCKER_USERNAME }}" >> .env
-            fi
+            # Update .env with all required variables
+            update_env() {
+              local key=$1
+              local value=$2
+              if grep -q "^${key}=" .env 2>/dev/null; then
+                sed -i "s|^${key}=.*|${key}=${value}|" .env
+              else
+                echo "${key}=${value}" >> .env
+              fi
+            }
+
+            update_env "DOCKER_HUB_USER" "${{ secrets.DOCKER_USERNAME }}"
+            update_env "MAIL_USERNAME" "${{ secrets.MAIL_USERNAME }}"
+            update_env "MAIL_PASSWORD" "${{ secrets.MAIL_PASSWORD }}"
 
             docker compose pull
             docker compose up -d --remove-orphans
