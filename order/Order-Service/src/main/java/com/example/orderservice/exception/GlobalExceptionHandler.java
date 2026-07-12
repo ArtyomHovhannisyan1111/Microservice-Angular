@@ -1,5 +1,6 @@
 package com.example.orderservice.exception;
 
+import feign.FeignException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -22,6 +23,12 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, String> handleBadRequest(RuntimeException ex) {
         return buildErrorResponse(ex.getMessage());
+    }
+
+    @ExceptionHandler(FeignException.class)
+    @ResponseStatus(HttpStatus.BAD_GATEWAY)
+    public Map<String, String> handleFeignException(FeignException ex) {
+        return buildErrorResponse("Ошибка связи с внутренним сервисом. Попробуйте позже.");
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
