@@ -100,7 +100,8 @@ public class ProductService {
     public Product decreaseStock(Integer id, Integer quantity) {
         ProductValidationUtils.validatePositiveQuantity(quantity);
 
-        Product product = findProduct(id);
+        Product product = productRepository.findByIdWithLock(id)
+                .orElseThrow(() -> new ProductNotFoundException(id));
         int current = getCurrentStock(product);
         if (current < quantity) {
             throw new InsufficientStockException(id, quantity, current);

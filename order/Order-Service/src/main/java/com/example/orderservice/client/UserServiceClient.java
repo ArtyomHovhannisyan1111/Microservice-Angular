@@ -14,4 +14,8 @@ public interface UserServiceClient {
     @PostMapping("/{id}/deduct-balance")
     void deductBalance(@PathVariable("id") Integer id,
                        @RequestBody Map<String, BigDecimal> request);
+
+    @PutMapping("/{id}/balance/top-up")
+    void topUpBalance(@PathVariable("id") Integer id,
+                      @RequestBody Map<String, BigDecimal> request);
 }

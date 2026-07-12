@@ -132,7 +132,31 @@ public class OrderService {
 
     @Transactional
     public Order cancelOrder(Integer id) {
-        return updateStatus(id, OrderStatus.CANCELLED);
+        Order order = findOrder(id);
+        OrderValidationUtil.validateStatus(OrderStatus.CANCELLED, order);
+
+        // Refund balance and restore stock only if order was active (balance already deducted)
+        if (order.getStatus() == OrderStatus.PENDING || order.getStatus() == OrderStatus.APPROVED) {
+            if (order.getUserId() != null && order.getTotalPrice() != null) {
+                try {
+                    userServiceClient.topUpBalance(order.getUserId(), Map.of("amount", order.getTotalPrice()));
+                    log.info("Balance refunded: userId={}, amount={}", order.getUserId(), order.getTotalPrice());
+                } catch (Exception e) {
+                    log.warn("Failed to refund balance for order {}: {}", id, e.getMessage());
+                }
+            }
+            if (order.getProductId() != null && order.getQuantity() != null) {
+                try {
+                    productFeignClient.increaseStock(order.getProductId(), new StockUpdateRequest(order.getQuantity()));
+                    log.info("Stock restored: productId={}, quantity={}", order.getProductId(), order.getQuantity());
+                } catch (Exception e) {
+                    log.warn("Failed to restore stock for order {}: {}", id, e.getMessage());
+                }
+            }
+        }
+
+        order.setStatus(OrderStatus.CANCELLED);
+        return orderRepository.save(order);
     }
 
     @Transactional

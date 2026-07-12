@@ -10,15 +10,19 @@ import com.example.authservice.entity.role.Role;
 import com.example.authservice.repository.PasswordResetTokenRepository;
 import com.example.authservice.repository.UserAuthRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -28,9 +32,13 @@ public class AuthService {
     private final JwtUtil2 jwtUtil;
     private final PasswordResetTokenRepository tokenRepository;
     private final EmailService emailService;
+    private final RestTemplate restTemplate;
 
     @Value("${app.frontend-url:http://localhost:4200}")
     private String frontendUrl;
+
+    @Value("${USER_SERVICE_URL:http://localhost:8092}")
+    private String userServiceUrl;
 
     public ResponseEntity<String> register(AuthRequest request) {
         if (userRepository.findByUsername(request.getUsername()).isPresent()) {
@@ -43,7 +51,24 @@ public class AuthService {
         user.setRole(Role.USER);
 
         userRepository.save(user);
+
+        syncUserToUserService(request.getUsername(), request.getPassword());
+
         return ResponseEntity.ok("User registered successfully!");
+    }
+
+    private void syncUserToUserService(String username, String password) {
+        try {
+            Map<String, String> body = Map.of(
+                    "username", username,
+                    "password", password,
+                    "email", username
+            );
+            restTemplate.postForObject(userServiceUrl + "/api/users/register", body, Object.class);
+            log.info("User synced to user-service: {}", username);
+        } catch (Exception e) {
+            log.warn("Failed to sync user '{}' to user-service: {}", username, e.getMessage());
+        }
     }
 
     public ResponseEntity<String> login(AuthRequest request) {
