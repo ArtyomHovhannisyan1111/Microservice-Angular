@@ -5,6 +5,7 @@ import com.example.imageservice.dto.MultipleImageUploadResponse;
 import com.example.imageservice.service.StorageService;
 import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -48,13 +49,23 @@ public class ImageController {
         );
     }
 
-    @GetMapping(value = "/{folder}/{fileName}", produces = {MediaType.IMAGE_JPEG_VALUE, MediaType.IMAGE_PNG_VALUE})
+    @GetMapping("/{folder}/{fileName}")
     public ResponseEntity<byte[]> download(
             @Pattern(regexp = "^[a-zA-Z0-9_-]+$", message = "Invalid folder name")
             @PathVariable String folder,
             @Pattern(regexp = "^[a-zA-Z0-9_.\\-]+$", message = "Invalid file name")
             @PathVariable String fileName) {
         byte[] imageBytes = storageService.downloadImage(folder + "/" + fileName);
-        return ResponseEntity.ok().body(imageBytes);
+        MediaType contentType = resolveContentType(fileName);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_TYPE, contentType.toString())
+                .body(imageBytes);
+    }
+
+    private MediaType resolveContentType(String fileName) {
+        String lower = fileName.toLowerCase();
+        if (lower.endsWith(".png"))  return MediaType.IMAGE_PNG;
+        if (lower.endsWith(".webp")) return MediaType.parseMediaType("image/webp");
+        return MediaType.IMAGE_JPEG;
     }
 }

@@ -186,6 +186,9 @@ type Tab = 'orders' | 'products';
               </div>
               <input #imgFileInput type="file" accept=".jpg,.jpeg,.png,.webp" class="hidden"
                      (change)="onImageFileChange($event)">
+              @if (imgError) {
+                <p class="mt-1 text-xs text-red-500">{{ 'ADMIN.IMAGE_UPLOAD_ERROR' | translate }}</p>
+              }
               @if (pf['imageUrl'].value) {
                 <img [src]="pf['imageUrl'].value | imageUrl"
                      class="mt-2 h-16 w-16 rounded-lg object-cover border border-gray-200 dark:border-gray-700"
@@ -304,6 +307,7 @@ export class AdminPanelComponent implements OnInit {
 
   imgUploading = false;
   imgProgress  = 0;
+  imgError     = false;
 
   readonly stats = signal([
     { labelKey: 'ADMIN.TOTAL_ORDERS', value: 0, color: 'text-primary-600 dark:text-primary-400' },
@@ -393,6 +397,7 @@ export class AdminPanelComponent implements OnInit {
     if (!file) return;
     this.imgUploading = true;
     this.imgProgress  = 0;
+    this.imgError     = false;
     this.imageService.upload(file, 'products').subscribe({
       next: e => {
         if (e.type === 'progress') {
@@ -402,7 +407,10 @@ export class AdminPanelComponent implements OnInit {
           this.imgUploading = false;
         }
       },
-      error: () => { this.imgUploading = false; }
+      error: () => {
+        this.imgUploading = false;
+        this.imgError = true;
+      }
     });
   }
 
