@@ -42,9 +42,6 @@ public class PaymentMethod {
     @Column(name = "cardholder_name", nullable = false)
     private String cardholderName;
 
-    @Column(nullable = false)
-    private String cvv;
-
     private boolean isActive;
 
     private BigDecimal amount;

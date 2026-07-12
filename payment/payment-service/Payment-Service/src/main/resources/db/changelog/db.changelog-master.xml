@@ -9,5 +9,6 @@
     <include file="db/changelog/db.changelog-1.1-add-cvv-cardholder.xml"/>
     <include file="db/changelog/db.changelog-1.2-create-cards.xml"/>
     <include file="db/changelog/db.changelog-1.3-add-amount.xml"/>
+    <include file="db/changelog/db.changelog-1.4-remove-cvv.xml"/>
 
 </databaseChangeLog>

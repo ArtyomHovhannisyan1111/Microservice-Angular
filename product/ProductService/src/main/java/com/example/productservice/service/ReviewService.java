@@ -32,6 +32,9 @@ public class ReviewService {
     @Transactional
     public ReviewResponse addReview(Integer productId, ReviewRequest request) {
         findProduct(productId);
+        if (reviewRepository.existsByProductIdAndUserId(productId, request.getUserId())) {
+            throw new IllegalArgumentException("You have already reviewed this product");
+        }
         Review review = Review.builder()
                 .productId(productId)
                 .userId(request.getUserId())

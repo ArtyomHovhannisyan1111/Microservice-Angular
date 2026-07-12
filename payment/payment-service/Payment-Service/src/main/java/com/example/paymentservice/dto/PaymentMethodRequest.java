@@ -29,8 +29,4 @@ public class PaymentMethodRequest {
 
     @NotBlank(message = "Cardholder name is required")
     String cardholderName;
-
-    @NotBlank(message = "CVV is required")
-    @Pattern(regexp = "^[0-9]{3,4}$", message = "CVV must be 3 or 4 digits")
-    String cvv;
 }

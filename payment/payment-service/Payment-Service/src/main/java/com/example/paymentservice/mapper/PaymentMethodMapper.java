@@ -24,7 +24,6 @@ public class PaymentMethodMapper {
                 .accountToken(genereatedToken)
                 .maskedNumber(maskedNumber)
                 .cardholderName(request.getCardholderName())
-                .cvv(request.getCvv())
                 .isActive(true)
                 .amount(BigDecimal.ZERO)
                 .build();
