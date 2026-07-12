@@ -297,7 +297,7 @@ jobs:
           username: root
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
-            cd /root/Microservice-Angular
+            cd /home/deploy/app
 
             git pull origin master
 
