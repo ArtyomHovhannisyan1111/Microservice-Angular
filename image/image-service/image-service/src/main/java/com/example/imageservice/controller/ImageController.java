@@ -56,12 +56,11 @@ public class ImageController {
     public ResponseEntity<byte[]> download(
             @Pattern(regexp = "^[a-zA-Z0-9_-]+$", message = "Invalid folder name")
             @PathVariable String folder,
-            @Pattern(regexp = "^[a-zA-Z0-9_\\-]+(\\.[a-zA-Z0-9]+)?$", message = "Invalid file name")
             @PathVariable String fileName) {
         if (!ALLOWED_FOLDERS.contains(folder)) {
             return ResponseEntity.badRequest().build();
         }
-        if (fileName.contains("..")) {
+        if (fileName.contains("..") || fileName.contains("/") || fileName.contains("\\")) {
             return ResponseEntity.badRequest().build();
         }
         byte[] imageBytes = storageService.downloadImage(folder + "/" + fileName);
