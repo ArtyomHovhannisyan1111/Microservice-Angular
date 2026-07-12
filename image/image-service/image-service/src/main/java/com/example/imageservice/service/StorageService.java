@@ -27,7 +27,9 @@ public class StorageService {
         StorageExceptionUtil.validateFileNotEmpty(file);
         StorageExceptionUtil.validateImageFormat(file);
 
-        String fileName = folder + "/" + UUID.randomUUID() + "_" + file.getOriginalFilename();
+        String originalName = file.getOriginalFilename() != null ? file.getOriginalFilename() : "file";
+        String safeOriginalName = originalName.replaceAll("[^a-zA-Z0-9._-]", "_");
+        String fileName = folder + "/" + UUID.randomUUID() + "_" + safeOriginalName;
 
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                 .bucket(bucketName)
