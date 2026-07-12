@@ -148,6 +148,7 @@ services:
       retries: 5
 
   product-service:
+    image: ${DOCKER_HUB_USER}/product-service:latest
     build:
       context: ./product/ProductService
       dockerfile: ../Dockerfile
@@ -170,6 +171,7 @@ services:
       - ecommerce-network
 
   order-service:
+    image: ${DOCKER_HUB_USER}/order-service:latest
     build:
       context: ./order/Order-Service
       dockerfile: ../Dockerfile
@@ -195,6 +197,7 @@ services:
       - ecommerce-network
 
   notification-service:
+    image: ${DOCKER_HUB_USER}/notification-service:latest
     build:
       context: ./notification/Notifictaion-Service
       dockerfile: ../Dockerfile
@@ -219,6 +222,7 @@ services:
       - ecommerce-network
 
   auth-service:
+    image: ${DOCKER_HUB_USER}/auth-service:latest
     build:
       context: ./auth2/auth-service
       dockerfile: ../../gateway/Dockerfile
@@ -240,6 +244,7 @@ services:
       - ecommerce-network
 
   user-service:
+    image: ${DOCKER_HUB_USER}/user-service:latest
     build:
       context: ./user/user-service/user-service
       dockerfile: ../../Dockerfile
@@ -282,6 +287,7 @@ services:
       retries: 5
 
   image-service:
+    image: ${DOCKER_HUB_USER}/image-service:latest
     build:
       context: ./image/image-service/image-service
       dockerfile: ../../Dockerfile
@@ -303,6 +309,7 @@ services:
       - ecommerce-network
 
   analytics-service:
+    image: ${DOCKER_HUB_USER}/analytics-service:latest
     build:
       context: ./analytics/analytics-service
       dockerfile: Dockerfile
@@ -327,6 +334,7 @@ services:
       - ecommerce-network
 
   gateway-service:
+    image: ${DOCKER_HUB_USER}/gateway-service:latest
     build:
       context: ./gateway/gateway-service
       dockerfile: ../Dockerfile
@@ -377,6 +385,7 @@ services:
       retries: 5
 
   payment-service:
+    image: ${DOCKER_HUB_USER}/payment-service:latest
     build:
       context: ./payment/payment-service/Payment-Service
       dockerfile: Dockerfile
@@ -399,6 +408,7 @@ services:
       - ecommerce-network
 
   frontend:
+    image: ${DOCKER_HUB_USER}/frontend:latest
     build:
       context: ./frontend
       dockerfile: Dockerfile
