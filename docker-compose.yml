@@ -219,6 +219,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: postgres
       MAIL_USERNAME: ${MAIL_USERNAME}
       MAIL_PASSWORD: ${MAIL_PASSWORD}
+      ORDER_SERVICE_URL: http://order-service:8080
       JAVA_TOOL_OPTIONS: "-Xms64m -Xmx200m"
     restart: always
     networks:

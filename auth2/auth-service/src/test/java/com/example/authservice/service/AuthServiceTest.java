@@ -1,6 +1,6 @@
 package com.example.authservice.service;
 
-import com.example.authservice.config.JwtUtil2;
+import com.example.authservice.config.JwtUtilAuth;
 import com.example.authservice.dto.AuthRequest;
 import com.example.authservice.entity.UserAuth;
 import com.example.authservice.entity.role.Role;
@@ -30,7 +30,8 @@ class AuthServiceTest {
 
     @Mock UserAuthRepository           userRepository;
     @Mock PasswordEncoder              passwordEncoder;
-    @Mock JwtUtil2                     jwtUtil;
+    @Mock
+    JwtUtilAuth jwtUtil;
     @Mock PasswordResetTokenRepository tokenRepository;
     @Mock EmailService                 emailService;
 
