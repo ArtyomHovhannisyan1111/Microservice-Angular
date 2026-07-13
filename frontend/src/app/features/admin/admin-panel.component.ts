@@ -139,9 +139,9 @@ type Tab = 'orders' | 'products';
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{{ 'ADMIN.CATEGORY' | translate }}</label>
               <select formControlName="category" class="input-field">
-                <option value="" disabled>Выберите категорию</option>
+                <option value="" disabled>{{ 'ADMIN.SELECT_CATEGORY' | translate }}</option>
                 @for (cat of categories; track cat) {
-                  <option [value]="cat">{{ cat }}</option>
+                  <option [value]="cat">{{ catKey(cat) | translate }}</option>
                 }
               </select>
             </div>
@@ -379,7 +379,7 @@ export class AdminPanelComponent implements OnInit {
       })
     );
     this.products.update(list => [product, ...list]);
-    this.productForm.reset({ rating: 4.0, price: 0, stock: 0 });
+    this.productForm.reset({ rating: 4.0, price: 0, stock: 0, category: '' });
     this.addingProduct.set(false);
     this.addSuccess.set(true);
     setTimeout(() => this.addSuccess.set(false), 3000);
