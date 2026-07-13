@@ -26,17 +26,17 @@ import { LangSwitcherComponent } from '../../../shared/components/lang-switcher/
       <!-- Grid overlay -->
       <div class="grid-overlay"></div>
 
+      <!-- Controls: top-right corner -->
+      <div class="page-controls">
+        <app-lang-switcher />
+        <app-theme-toggle />
+      </div>
+
       <!-- Card -->
       <div class="card" [class.shake]="shaking()">
 
         <!-- Top glow line -->
         <div class="card-glow-line"></div>
-
-        <!-- Controls -->
-        <div class="card-controls">
-          <app-lang-switcher />
-          <app-theme-toggle />
-        </div>
 
         <!-- Logo -->
         <div class="logo-wrap">
@@ -441,10 +441,10 @@ import { LangSwitcherComponent } from '../../../shared/components/lang-switcher/
       background: rgba(139,92,246,.1);
     }
 
-    /* ─── Controls bar ─────────────────────────────────────────── */
-    .card-controls {
-      display: flex; align-items: center; justify-content: flex-end;
-      gap: .5rem; margin-bottom: 1.25rem;
+    /* ─── Controls: top-right ──────────────────────────────────── */
+    .page-controls {
+      position: absolute; top: 1.25rem; right: 1.25rem;
+      display: flex; align-items: center; gap: .5rem; z-index: 20;
     }
 
     /* ─── Utilities ─────────────────────────────────────────────── */
