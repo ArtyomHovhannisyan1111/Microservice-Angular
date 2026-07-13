@@ -112,7 +112,11 @@ public class ProductService {
     }
 
     private void publishProductEvent(Product product) {
-        kafkaTemplate.send(KafkaTopicConfig.PRODUCT_EVENTS_TOPIC, product.getId(), product);
+        try {
+            kafkaTemplate.send(KafkaTopicConfig.PRODUCT_EVENTS_TOPIC, product.getId(), product);
+        } catch (Exception e) {
+            // Kafka unavailable — event skipped, product operation succeeds
+        }
     }
 
     private Product findProduct(Integer id) {
