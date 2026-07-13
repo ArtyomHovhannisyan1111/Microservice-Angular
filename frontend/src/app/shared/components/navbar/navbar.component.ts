@@ -410,9 +410,13 @@ export class NavbarComponent implements OnInit {
 
   toggleNotif(e: Event): void {
     e.stopPropagation();
+    const opening = !this.notifOpen();
     this.notifOpen.update(v => !v);
     this.catalogOpen.set(false);
     this.walletOpen.set(false);
+    if (opening && this.notifService.unreadCount() > 0) {
+      this.notifService.markAllAsRead();
+    }
   }
 
   toggleWallet(e: Event): void {
