@@ -283,8 +283,6 @@ export class AdminPanelComponent implements OnInit {
   private imageService   = inject(ImageService);
   private fb             = inject(FormBuilder);
 
-  categories: string[] = [];
-
   private static readonly CATEGORY_KEYS: Record<string, string> = {
     'Электроника': 'CATEGORIES.ELECTRONICS',
     'Периферия':   'CATEGORIES.PERIPHERALS',
@@ -292,6 +290,8 @@ export class AdminPanelComponent implements OnInit {
     'Аудио':       'CATEGORIES.AUDIO',
     'Аксессуары':  'CATEGORIES.ACCESSORIES',
   };
+
+  categories: string[] = Object.keys(AdminPanelComponent.CATEGORY_KEYS);
 
   catKey(cat: string): string {
     return AdminPanelComponent.CATEGORY_KEYS[cat] ?? cat;
@@ -331,7 +331,6 @@ export class AdminPanelComponent implements OnInit {
   ngOnInit(): void {
     this.loadOrders();
     this.loadProducts();
-    this.productService.getCategories().subscribe(cats => this.categories = cats);
   }
 
   private loadOrders(): void {
