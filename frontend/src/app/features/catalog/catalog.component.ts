@@ -206,7 +206,7 @@ export class CatalogComponent implements OnInit {
   private searchTimeout: any;
 
   ngOnInit(): void {
-    this.categories = this.productService.getCategories();
+    this.productService.getCategories().subscribe(cats => this.categories = cats);
 
     this.route.queryParamMap.pipe(
       takeUntilDestroyed(this.destroyRef)
