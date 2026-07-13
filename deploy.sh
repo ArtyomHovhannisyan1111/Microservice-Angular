@@ -35,6 +35,7 @@ EOF
   for svc in product-service order-service notification-service auth-service user-service image-service analytics-service payment-service gateway-service frontend; do
     echo "  --> Building \$svc..."
     docker compose build \$svc
+    docker image prune -f
   done
 
   echo "==> Starting containers..."
