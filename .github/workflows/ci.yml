@@ -1,0 +1,76 @@
+name: CI
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+env:
+  MAVEN_OPTS: '-Xmx1024m -XX:+TieredCompilation -XX:TieredStopAtLevel=1'
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      frontend: ${{ steps.f.outputs.frontend }}
+      matrix: ${{ steps.m.outputs.value }}
+      any: ${{ steps.m.outputs.any }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: f
+        with:
+          filters: |
+            auth:         ['auth2/auth-service/**']
+            gateway:      ['gateway/gateway-service/**']
+            product:      ['product/ProductService/**']
+            order:        ['order/Order-Service/**']
+            user:         ['user/user-service/**']
+            notification: ['notification/Notifictaion-Service/**']
+            payment:      ['payment/payment-service/**']
+            image:        ['image/image-service/**']
+            analytics:    ['analytics/analytics-service/**']
+            frontend:     ['frontend/**']
+      - id: m
+        run: |
+          s=()
+          [[ "${{ steps.f.outputs.auth }}"         == true ]] && s+=('{"name":"auth-service","path":"auth2/auth-service"}')
+          [[ "${{ steps.f.outputs.gateway }}"      == true ]] && s+=('{"name":"gateway-service","path":"gateway/gateway-service"}')
+          [[ "${{ steps.f.outputs.product }}"      == true ]] && s+=('{"name":"product-service","path":"product/ProductService"}')
+          [[ "${{ steps.f.outputs.order }}"        == true ]] && s+=('{"name":"order-service","path":"order/Order-Service"}')
+          [[ "${{ steps.f.outputs.user }}"         == true ]] && s+=('{"name":"user-service","path":"user/user-service/user-service"}')
+          [[ "${{ steps.f.outputs.notification }}" == true ]] && s+=('{"name":"notification-service","path":"notification/Notifictaion-Service"}')
+          [[ "${{ steps.f.outputs.payment }}"      == true ]] && s+=('{"name":"payment-service","path":"payment/payment-service/Payment-Service"}')
+          [[ "${{ steps.f.outputs.image }}"        == true ]] && s+=('{"name":"image-service","path":"image/image-service/image-service"}')
+          [[ "${{ steps.f.outputs.analytics }}"    == true ]] && s+=('{"name":"analytics-service","path":"analytics/analytics-service"}')
+          if [ ${#s[@]} -eq 0 ]; then
+            echo 'any=false' >> $GITHUB_OUTPUT; echo 'value={"include":[]}' >> $GITHUB_OUTPUT
+          else
+            printf -v j ',%s' "${s[@]}"
+            echo 'any=true' >> $GITHUB_OUTPUT; echo "value={\"include\":[${j:1}]}" >> $GITHUB_OUTPUT
+          fi
+
+  build-backend:
+    needs: detect
+    if: needs.detect.outputs.any == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.detect.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { java-version: '17', distribution: temurin, cache: maven }
+      - run: mvn package -DskipTests --no-transfer-progress
+        working-directory: ${{ matrix.path }}
+
+  build-frontend:
+    needs: detect
+    if: needs.detect.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '18', cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - run: npm ci && npm run build -- --configuration production
+        working-directory: frontend

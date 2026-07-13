@@ -4,8 +4,6 @@ import { ReactiveFormsModule, FormBuilder, Validators, AbstractControl, Validati
 import { RouterLink, Router } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { AuthService } from '../../../core/services/auth.service';
-import { ThemeToggleComponent } from '../../../shared/components/theme-toggle/theme-toggle.component';
-import { LangSwitcherComponent } from '../../../shared/components/lang-switcher/lang-switcher.component';
 
 function passwordMatch(control: AbstractControl): ValidationErrors | null {
   const pass = control.get('password')?.value;
@@ -16,7 +14,7 @@ function passwordMatch(control: AbstractControl): ValidationErrors | null {
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, TranslateModule, ThemeToggleComponent, LangSwitcherComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, TranslateModule],
   template: `
     <div class="min-h-[calc(100vh-8rem)] flex items-center justify-center py-12">
       <div class="w-full max-w-md">
@@ -33,12 +31,6 @@ function passwordMatch(control: AbstractControl): ValidationErrors | null {
         </div>
 
         <div class="card p-8">
-          <!-- Controls -->
-          <div class="flex items-center justify-end gap-2 mb-5">
-            <app-lang-switcher />
-            <app-theme-toggle />
-          </div>
-
           <form [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-5">
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{{ 'AUTH.NAME' | translate }}</label>
