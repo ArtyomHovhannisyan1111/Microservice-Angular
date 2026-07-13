@@ -47,7 +47,6 @@ public class SecurityConfig {
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
-        config.setAllowCredentials(false);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;
@@ -58,23 +57,14 @@ public class SecurityConfig {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**", "/api/auth/**", "/error").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
-                        .requestMatchers("/api/products/**").hasAnyRole("USER", "ADMIN")
-
-                        .requestMatchers("/api/orders", "/api/orders/**").hasAnyRole("USER", "ADMIN")
-                        .requestMatchers("/api/notifications", "/api/notifications/**").hasAnyRole("USER", "ADMIN")
-                        .requestMatchers("/api/users", "/api/users/**").hasAnyRole("USER", "ADMIN")
-
-                        .requestMatchers(HttpMethod.GET, "/api/image", "/api/image/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/image", "/api/image/**").hasRole("ADMIN")
-
-                        .requestMatchers("/api/analytics", "/api/analytics/**").hasRole("ADMIN")
-                        .requestMatchers("/api/payment-methods", "/api/payment-methods/**").hasAnyRole("USER", "ADMIN")
-                        .requestMatchers("/api/v1/balance", "/api/v1/balance/**").hasAnyRole("USER", "ADMIN")
-
+                        .requestMatchers(HttpMethod.GET, "/api/products/**", "/api/image/**").permitAll()
+                        .requestMatchers("/api/products/**", "/api/orders/**", "/api/notifications/**",
+                                "/api/users/**", "/api/payment-methods/**", "/api/v1/balance/**").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/image/**").hasRole("ADMIN")
+                        .requestMatchers("/api/analytics/**").hasRole("ADMIN")
                         .anyRequest().hasRole("ADMIN")
                 )
                 .exceptionHandling(ex -> ex
@@ -88,9 +78,8 @@ public class SecurityConfig {
                             res.setContentType("application/json;charset=UTF-8");
                             res.getWriter().write("{\"error\":\"Доступ запрещён. Войдите в систему заново.\"}");
                         })
-                );
-
-        http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+                )
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

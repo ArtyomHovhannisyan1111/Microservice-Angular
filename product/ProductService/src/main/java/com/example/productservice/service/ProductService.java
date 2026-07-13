@@ -34,9 +34,7 @@ public class ProductService {
     }
 
     public List<Product> searchProducts(String name) {
-        if (name == null || name.trim().isBlank()) {
-            return getProducts();
-        }
+        if (name == null || name.isBlank()) return getProducts();
         return productRepository.findByNameContainingIgnoreCase(name);
     }
 

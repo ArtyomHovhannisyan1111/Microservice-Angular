@@ -19,62 +19,40 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final EmailService emailService;
 
-    @KafkaListener(
-            topics = "order-topic",
-            groupId = "notification-group",
-            containerFactory = "kafkaListenerContainerFactory"
-    )
+    @KafkaListener(topics = "order-topic", groupId = "notification-group", containerFactory = "kafkaListenerContainerFactory")
     public void consumeOrderEvent(OrderEvent event) {
-
-        String title = NotificationUtil.buildTitle(event.getOrderId());
-        String message = NotificationUtil.buildMessage(event.getTotalAmount());
-
-        var notification = NotificationMapper.toEntity(event, title, message);
-
-        notificationRepository.save(notification);
+        notificationRepository.save(NotificationMapper.toEntity(event,
+                NotificationUtil.buildTitle(event.getOrderId()),
+                NotificationUtil.buildMessage(event.getTotalAmount())));
     }
 
-    public void cancelOrder(ConfirmOrderRequest request) {
-        if (request.getUserEmail() != null && !request.getUserEmail().isBlank()) {
-            emailService.sendOrderCancellationEmail(
-                request.getUserEmail(),
-                request.getOrderId(),
-                request.getTotalPrice() != null ? request.getTotalPrice() : BigDecimal.ZERO,
-                request.getUserName() != null ? request.getUserName() : "Покупатель"
-            );
-        }
+    public void cancelOrder(ConfirmOrderRequest req) {
+        if (req.getUserEmail() != null && !req.getUserEmail().isBlank())
+            emailService.sendOrderCancellationEmail(req.getUserEmail(), req.getOrderId(),
+                    req.getTotalPrice() != null ? req.getTotalPrice() : BigDecimal.ZERO,
+                    req.getUserName() != null ? req.getUserName() : "Покупатель");
 
-        Notification notification = Notification.builder()
-            .userId(request.getUserId() != null ? request.getUserId() : 0L)
-            .title("Заказ отменён")
-            .message("Ваш заказ #" + request.getOrderId() +
-                " на сумму " + request.getTotalPrice() + " ₽ отменён: недостаточно средств на балансе.")
-            .totalPrice(request.getTotalPrice() != null ? request.getTotalPrice() : BigDecimal.ZERO)
-            .isRead(false)
-            .build();
-
-        notificationRepository.save(notification);
+        notificationRepository.save(Notification.builder()
+                .userId(req.getUserId() != null ? req.getUserId() : 0L)
+                .title("Заказ отменён")
+                .message("Ваш заказ #" + req.getOrderId() + " на сумму " + req.getTotalPrice() + " ₽ отменён: недостаточно средств на балансе.")
+                .totalPrice(req.getTotalPrice() != null ? req.getTotalPrice() : BigDecimal.ZERO)
+                .isRead(false)
+                .build());
     }
 
-    public void confirmOrder(ConfirmOrderRequest request) {
-        if (request.getUserEmail() != null && !request.getUserEmail().isBlank()) {
-            emailService.sendOrderConfirmationEmail(
-                request.getUserEmail(),
-                request.getOrderId(),
-                request.getTotalPrice() != null ? request.getTotalPrice() : BigDecimal.ZERO,
-                request.getUserName() != null ? request.getUserName() : "Покупатель"
-            );
-        }
+    public void confirmOrder(ConfirmOrderRequest req) {
+        if (req.getUserEmail() != null && !req.getUserEmail().isBlank())
+            emailService.sendOrderConfirmationEmail(req.getUserEmail(), req.getOrderId(),
+                    req.getTotalPrice() != null ? req.getTotalPrice() : BigDecimal.ZERO,
+                    req.getUserName() != null ? req.getUserName() : "Покупатель");
 
-        Notification notification = Notification.builder()
-            .userId(request.getUserId() != null ? request.getUserId() : 0L)
-            .title("Заказ подтверждён")
-            .message("Ваш заказ #" + request.getOrderId() +
-                " на сумму " + request.getTotalPrice() + " ₽ подтверждён администратором.")
-            .totalPrice(request.getTotalPrice() != null ? request.getTotalPrice() : BigDecimal.ZERO)
-            .isRead(false)
-            .build();
-
-        notificationRepository.save(notification);
+        notificationRepository.save(Notification.builder()
+                .userId(req.getUserId() != null ? req.getUserId() : 0L)
+                .title("Заказ подтверждён")
+                .message("Ваш заказ #" + req.getOrderId() + " на сумму " + req.getTotalPrice() + " ₽ подтверждён администратором.")
+                .totalPrice(req.getTotalPrice() != null ? req.getTotalPrice() : BigDecimal.ZERO)
+                .isRead(false)
+                .build());
     }
 }

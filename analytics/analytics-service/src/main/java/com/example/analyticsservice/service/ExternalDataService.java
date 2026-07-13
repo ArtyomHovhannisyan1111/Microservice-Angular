@@ -18,10 +18,10 @@ public class ExternalDataService {
 
     private final RestTemplate restTemplate;
 
-    @Value("${services.order:http://localhost:8082}")
+    @Value("${services.order}")
     private String orderServiceUrl;
 
-    @Value("${services.product:http://localhost:8081}")
+    @Value("${services.product}")
     private String productServiceUrl;
 
     public List<OrderDto> getAllOrders() {
@@ -39,9 +39,8 @@ public class ExternalDataService {
             @SuppressWarnings("unchecked")
             Map<String, Object> page = restTemplate.getForObject(
                     productServiceUrl + "/api/products/page?size=1&page=0", Map.class);
-            if (page != null && page.containsKey("totalElements")) {
+            if (page != null && page.containsKey("totalElements"))
                 return ((Number) page.get("totalElements")).longValue();
-            }
         } catch (Exception e) {
             log.error("Failed to fetch product count", e);
         }
@@ -53,9 +52,8 @@ public class ExternalDataService {
         try {
             Map<String, Object> page = restTemplate.getForObject(
                     productServiceUrl + "/api/products/page?size=500&page=0", Map.class);
-            if (page != null && page.containsKey("content")) {
+            if (page != null && page.containsKey("content"))
                 return (List<Map<String, Object>>) page.get("content");
-            }
         } catch (Exception e) {
             log.error("Failed to fetch products", e);
         }

@@ -22,20 +22,17 @@ public class BalanceService {
     private final PaymentMethodRepository paymentMethodRepository;
     private final RestClient restClient;
 
-    @Value("${USER_SERVICE_URL:http://localhost:8092}")
+    @Value("${USER_SERVICE_URL}")
     private String userServiceUrl;
 
     @Transactional
     public TopUpResponse depositToCard(Long userId, TopUpRequest request) {
-        PaymentMethod card = paymentMethodRepository.findById(request.getPaymentMethodId())
-                .orElseThrow(() -> new CardNotFoundException(request.getPaymentMethodId()));
-
+        PaymentMethod card = findCard(request.getPaymentMethodId());
         PaymentMathUtils.validateOwner(card, userId);
         PaymentMathUtils.validateActive(card);
         PaymentMathUtils.validatePositiveAmount(request.getAmount());
 
-        BigDecimal current = card.getAmount() != null ? card.getAmount() : BigDecimal.ZERO;
-        card.setAmount(current.add(request.getAmount()));
+        card.setAmount((card.getAmount() != null ? card.getAmount() : BigDecimal.ZERO).add(request.getAmount()));
         paymentMethodRepository.save(card);
 
         return buildResponse(card, request.getAmount(), "Средства зачислены на карту");
@@ -43,16 +40,13 @@ public class BalanceService {
 
     @Transactional
     public TopUpResponse transferToUser(Long userId, TopUpRequest request) {
-        PaymentMethod card = paymentMethodRepository.findById(request.getPaymentMethodId())
-                .orElseThrow(() -> new CardNotFoundException(request.getPaymentMethodId()));
-
+        PaymentMethod card = findCard(request.getPaymentMethodId());
         PaymentMathUtils.validateOwner(card, userId);
         PaymentMathUtils.validateActive(card);
         PaymentMathUtils.validatePositiveAmount(request.getAmount());
         PaymentMathUtils.validateFunds(card.getAmount(), request.getAmount());
 
         Long targetUserId = request.getWalletUserId() != null ? request.getWalletUserId() : userId;
-
         restClient.put()
                 .uri(userServiceUrl + "/api/users/" + targetUserId + "/balance/top-up")
                 .body(Map.of("amount", request.getAmount()))
@@ -63,6 +57,11 @@ public class BalanceService {
         paymentMethodRepository.save(card);
 
         return buildResponse(card, request.getAmount(), "Փոխանցումը հաջողվեց");
+    }
+
+    private PaymentMethod findCard(Long id) {
+        return paymentMethodRepository.findById(id)
+                .orElseThrow(() -> new CardNotFoundException(id));
     }
 
     private TopUpResponse buildResponse(PaymentMethod card, BigDecimal amount, String message) {
