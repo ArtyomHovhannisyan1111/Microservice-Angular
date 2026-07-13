@@ -140,9 +140,11 @@ type Tab = 'orders' | 'products';
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{{ 'ADMIN.CATEGORY' | translate }}</label>
               <select formControlName="category" class="input-field">
                 <option value="" disabled>Выберите категорию</option>
-                @for (cat of categories; track cat) {
-                  <option [value]="cat">{{ cat }}</option>
-                }
+                <option value="Электроника">Электроника</option>
+                <option value="Периферия">Периферия</option>
+                <option value="Мониторы">Мониторы</option>
+                <option value="Аудио">Аудио</option>
+                <option value="Аксессуары">Аксессуары</option>
               </select>
             </div>
             <div class="sm:col-span-2">
