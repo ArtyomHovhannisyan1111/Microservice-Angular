@@ -31,8 +31,11 @@ EOF
   echo "==> Cleaning up Docker build cache..."
   docker builder prune -f
 
-  echo "==> Building services one by one (no-parallel to save disk space)..."
-  docker compose build --no-parallel
+  echo "==> Building services one by one (to save disk space)..."
+  for svc in product-service order-service notification-service auth-service user-service image-service analytics-service payment-service gateway-service frontend; do
+    echo "  --> Building $svc..."
+    docker compose build $svc
+  done
 
   echo "==> Starting containers..."
   docker compose up -d
