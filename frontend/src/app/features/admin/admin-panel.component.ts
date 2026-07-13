@@ -291,7 +291,7 @@ export class AdminPanelComponent implements OnInit {
     'Аксессуары':  'CATEGORIES.ACCESSORIES',
   };
 
-  categories: string[] = Object.keys(AdminPanelComponent.CATEGORY_KEYS);
+  categories: string[] = ['Электроника', 'Периферия', 'Мониторы', 'Аудио', 'Аксессуары'];
 
   catKey(cat: string): string {
     return AdminPanelComponent.CATEGORY_KEYS[cat] ?? cat;
