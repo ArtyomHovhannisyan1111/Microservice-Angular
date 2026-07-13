@@ -34,8 +34,8 @@ export class AppComponent implements OnInit {
 
   readonly isAuthPage = toSignal(
     this.router.events.pipe(
-      filter(e => e instanceof NavigationEnd),
-      map((e: NavigationEnd) => e.url.startsWith('/auth')),
+      filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+      map(e => e.url.startsWith('/auth')),
       startWith(this.router.url.startsWith('/auth'))
     ),
     { initialValue: this.router.url.startsWith('/auth') }
