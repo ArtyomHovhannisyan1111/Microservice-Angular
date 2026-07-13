@@ -33,8 +33,8 @@ EOF
 
   echo "==> Building services one by one (to save disk space)..."
   for svc in product-service order-service notification-service auth-service user-service image-service analytics-service payment-service gateway-service frontend; do
-    echo "  --> Building $svc..."
-    docker compose build $svc
+    echo "  --> Building \$svc..."
+    docker compose build \$svc
   done
 
   echo "==> Starting containers..."
