@@ -4,13 +4,16 @@ import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { RouterLink, Router, ActivatedRoute } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { AuthService } from '../../../core/services/auth.service';
+import { ThemeService } from '../../../core/services/theme.service';
+import { ThemeToggleComponent } from '../../../shared/components/theme-toggle/theme-toggle.component';
+import { LangSwitcherComponent } from '../../../shared/components/lang-switcher/lang-switcher.component';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, TranslateModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, TranslateModule, ThemeToggleComponent, LangSwitcherComponent],
   template: `
-    <div class="login-root">
+    <div class="login-root" [class.light]="!theme.isDark()">
 
       <!-- Animated mesh background -->
       <div class="mesh-bg"></div>
@@ -28,6 +31,12 @@ import { AuthService } from '../../../core/services/auth.service';
 
         <!-- Top glow line -->
         <div class="card-glow-line"></div>
+
+        <!-- Controls -->
+        <div class="card-controls">
+          <app-lang-switcher />
+          <app-theme-toggle />
+        </div>
 
         <!-- Logo -->
         <div class="logo-wrap">
@@ -432,9 +441,88 @@ import { AuthService } from '../../../core/services/auth.service';
       background: rgba(139,92,246,.1);
     }
 
+    /* ─── Controls bar ─────────────────────────────────────────── */
+    .card-controls {
+      display: flex; align-items: center; justify-content: flex-end;
+      gap: .5rem; margin-bottom: 1.25rem;
+    }
+
     /* ─── Utilities ─────────────────────────────────────────────── */
     .spin { animation: spin .8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ─── Light mode ────────────────────────────────────────────── */
+    .login-root.light .mesh-bg {
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 30%, rgba(99,102,241,.12) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 80% at 80% 70%, rgba(168,85,247,.1) 0%, transparent 60%),
+        radial-gradient(ellipse 100% 100% at 50% 50%, #f5f3ff 0%, #ede9fe 100%);
+    }
+    .login-root.light .orb-1 { background: radial-gradient(circle, rgba(99,102,241,.18), rgba(168,85,247,.08)); }
+    .login-root.light .orb-2 { background: radial-gradient(circle, rgba(6,182,212,.12), rgba(59,130,246,.06)); }
+    .login-root.light .orb-3 { background: radial-gradient(circle, rgba(236,72,153,.1), rgba(244,63,94,.04)); }
+    .login-root.light .grid-overlay {
+      background-image:
+        linear-gradient(rgba(99,102,241,.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(99,102,241,.05) 1px, transparent 1px);
+    }
+    .login-root.light .card {
+      background: rgba(255,255,255,.88);
+      border-color: rgba(99,102,241,.18);
+      box-shadow:
+        0 0 0 1px rgba(99,102,241,.08),
+        0 32px 64px rgba(99,102,241,.12),
+        inset 0 1px 0 rgba(255,255,255,.9);
+    }
+    .login-root.light .card-glow-line {
+      background: linear-gradient(90deg, transparent, rgba(99,102,241,.5), rgba(139,92,246,.5), transparent);
+    }
+    .login-root.light .title { color: #1e1b4b; }
+    .login-root.light .subtitle { color: rgba(75,85,99,.7); }
+    .login-root.light .field-label { color: rgba(75,85,99,.9); }
+    .login-root.light .field.focused .field-label { color: #6366f1; }
+    .login-root.light .field.has-error .field-label { color: #ef4444; }
+    .login-root.light .field-input {
+      background: rgba(255,255,255,.9);
+      border-color: rgba(99,102,241,.2);
+      color: #1e1b4b;
+    }
+    .login-root.light .field-input::placeholder { color: rgba(107,114,128,.45); }
+    .login-root.light .field.focused .field-input {
+      border-color: rgba(99,102,241,.5);
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(99,102,241,.1), 0 2px 8px rgba(0,0,0,.06);
+    }
+    .login-root.light .field.has-error .field-input {
+      border-color: rgba(239,68,68,.4);
+      box-shadow: 0 0 0 3px rgba(239,68,68,.08);
+    }
+    .login-root.light .field-icon { color: rgba(107,114,128,.45); }
+    .login-root.light .field.focused .field-icon { color: #6366f1; }
+    .login-root.light .field.has-error .field-icon { color: #ef4444; }
+    .login-root.light .eye-btn { color: rgba(107,114,128,.45); }
+    .login-root.light .eye-btn:hover { color: #6366f1; }
+    .login-root.light .forgot-link { color: rgba(107,114,128,.65); }
+    .login-root.light .forgot-link:hover { color: #6366f1; }
+    .login-root.light .divider-text { color: rgba(107,114,128,.65); }
+    .login-root.light .divider-line {
+      background: linear-gradient(90deg, transparent, rgba(99,102,241,.2), transparent);
+    }
+    .login-root.light .register-link {
+      color: rgba(75,85,99,.75);
+      border-color: rgba(99,102,241,.15);
+    }
+    .login-root.light .register-link:hover {
+      color: #6366f1;
+      border-color: rgba(99,102,241,.35);
+      background: rgba(99,102,241,.05);
+    }
+    .login-root.light .logo-ring {
+      background: linear-gradient(135deg, rgba(99,102,241,.15), rgba(168,85,247,.1));
+      border-color: rgba(99,102,241,.3);
+    }
+    .login-root.light .logo-icon { color: #6366f1; }
+    .login-root.light .logo-pulse { border-color: rgba(99,102,241,.25); }
   `]
 })
 export class LoginComponent {
@@ -442,6 +530,7 @@ export class LoginComponent {
   private auth   = inject(AuthService);
   private router = inject(Router);
   private route  = inject(ActivatedRoute);
+  readonly theme = inject(ThemeService);
 
   readonly loading  = signal(false);
   readonly error    = signal('');
