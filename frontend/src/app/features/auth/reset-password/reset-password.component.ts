@@ -6,7 +6,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { TranslateModule } from '@ngx-translate/core';
 
-const AUTH_URL = 'http://localhost:8091';
+const AUTH_URL = '';
 
 @Component({
   selector: 'app-reset-password',
@@ -165,7 +165,7 @@ export class ResetPasswordComponent implements OnInit {
   private parseError(e: unknown): string {
     if (e instanceof HttpErrorResponse) {
       if (e.error instanceof ProgressEvent) {
-        return 'Сервер недоступен. Убедитесь, что auth-service запущен на порту 8091.';
+        return 'Ошибка соединения с сервером. Попробуйте позже.';
       }
       return typeof e.error === 'string' ? e.error : (e.message ?? 'Ошибка сервера');
     }
