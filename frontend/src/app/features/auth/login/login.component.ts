@@ -5,13 +5,12 @@ import { RouterLink, Router, ActivatedRoute } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { AuthService } from '../../../core/services/auth.service';
 import { ThemeService } from '../../../core/services/theme.service';
-import { ThemeToggleComponent } from '../../../shared/components/theme-toggle/theme-toggle.component';
-import { LangSwitcherComponent } from '../../../shared/components/lang-switcher/lang-switcher.component';
+import { LanguageService, Lang } from '../../../core/services/language.service';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, TranslateModule, ThemeToggleComponent, LangSwitcherComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, TranslateModule],
   template: `
     <div class="login-root" [class.light]="!theme.isDark()">
 
@@ -28,8 +27,29 @@ import { LangSwitcherComponent } from '../../../shared/components/lang-switcher/
 
       <!-- Controls: top-right corner -->
       <div class="page-controls">
-        <app-lang-switcher />
-        <app-theme-toggle />
+        <!-- Lang switcher -->
+        <div class="ctrl-pill">
+          @for (lang of langs; track lang.code) {
+            <button class="ctrl-lang-btn"
+                    [class.active]="langSvc.current() === lang.code"
+                    (click)="langSvc.setLang(lang.code)">
+              <span>{{ lang.flag }}</span>
+              <span class="ctrl-lang-label">{{ lang.label }}</span>
+            </button>
+          }
+        </div>
+        <!-- Theme toggle -->
+        <button class="ctrl-theme-btn" (click)="theme.toggle()">
+          @if (theme.isDark()) {
+            <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"/>
+            </svg>
+          } @else {
+            <svg width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+            </svg>
+          }
+        </button>
       </div>
 
       <!-- Card -->
@@ -447,6 +467,69 @@ import { LangSwitcherComponent } from '../../../shared/components/lang-switcher/
       display: flex; align-items: center; gap: .5rem; z-index: 20;
     }
 
+    /* Glass pill for lang buttons */
+    .ctrl-pill {
+      display: flex; align-items: center; gap: 2px;
+      background: rgba(255,255,255,.12);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,.2);
+      border-radius: 10px;
+      padding: 3px;
+    }
+    .ctrl-lang-btn {
+      display: flex; align-items: center; gap: 4px;
+      padding: 4px 8px; border: none; border-radius: 7px;
+      font-size: .72rem; font-weight: 600; cursor: pointer;
+      color: rgba(255,255,255,.55);
+      background: transparent;
+      transition: all .15s;
+    }
+    .ctrl-lang-btn:hover { color: rgba(255,255,255,.9); background: rgba(255,255,255,.08); }
+    .ctrl-lang-btn.active {
+      background: rgba(255,255,255,.22);
+      color: #fff;
+      box-shadow: 0 1px 4px rgba(0,0,0,.25);
+    }
+    .ctrl-lang-label { display: none; }
+    @media (min-width: 480px) { .ctrl-lang-label { display: inline; } }
+
+    /* Theme toggle button */
+    .ctrl-theme-btn {
+      width: 36px; height: 36px;
+      display: flex; align-items: center; justify-content: center;
+      border: none; border-radius: 10px; cursor: pointer;
+      background: rgba(255,255,255,.12);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,.2);
+      color: rgba(255,255,255,.85);
+      transition: all .15s;
+    }
+    .ctrl-theme-btn:hover {
+      background: rgba(255,255,255,.2);
+      color: #fff;
+      transform: rotate(15deg);
+    }
+
+    /* Light mode overrides for controls */
+    .login-root.light .ctrl-pill {
+      background: rgba(99,102,241,.1);
+      border-color: rgba(99,102,241,.25);
+    }
+    .login-root.light .ctrl-lang-btn { color: rgba(75,85,99,.6); }
+    .login-root.light .ctrl-lang-btn:hover { color: #4f46e5; background: rgba(99,102,241,.1); }
+    .login-root.light .ctrl-lang-btn.active {
+      background: rgba(99,102,241,.18);
+      color: #4f46e5;
+    }
+    .login-root.light .ctrl-theme-btn {
+      background: rgba(99,102,241,.1);
+      border-color: rgba(99,102,241,.25);
+      color: #4f46e5;
+    }
+    .login-root.light .ctrl-theme-btn:hover { background: rgba(99,102,241,.2); color: #4338ca; }
+
     /* ─── Utilities ─────────────────────────────────────────────── */
     .spin { animation: spin .8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
@@ -530,7 +613,14 @@ export class LoginComponent {
   private auth   = inject(AuthService);
   private router = inject(Router);
   private route  = inject(ActivatedRoute);
-  readonly theme = inject(ThemeService);
+  readonly theme  = inject(ThemeService);
+  readonly langSvc = inject(LanguageService);
+
+  readonly langs: { code: Lang; label: string; flag: string }[] = [
+    { code: 'ru', label: 'RU', flag: '🇷🇺' },
+    { code: 'en', label: 'EN', flag: '🇬🇧' },
+    { code: 'hy', label: 'ՀՅ', flag: '🇦🇲' }
+  ];
 
   readonly loading  = signal(false);
   readonly error    = signal('');
