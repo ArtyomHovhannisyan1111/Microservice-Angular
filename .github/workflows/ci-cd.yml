@@ -1,8 +1,4 @@
-# =============================================================================
-# CI/CD Pipeline — Mikroservis Monorepo
-# =============================================================================
-
-name: CI/CD Pipeline
+name:    CI/CD Pipeline
 
 on:
   push:
@@ -83,7 +79,7 @@ jobs:
           services=()
 
           [[ "${{ steps.filter.outputs.auth }}" == "true" ]] && \
-            services+=('{"name":"auth-service","path":"auth2/auth-service","dockerfile":"gateway/Dockerfile"}')
+            services+=('{"name":"auth-service","path":"auth2/auth-service","dockerfile":"auth2/Dockerfile"}')
           [[ "${{ steps.filter.outputs.gateway }}" == "true" ]] && \
             services+=('{"name":"gateway-service","path":"gateway/gateway-service","dockerfile":"gateway/Dockerfile"}')
           [[ "${{ steps.filter.outputs.product }}" == "true" ]] && \
