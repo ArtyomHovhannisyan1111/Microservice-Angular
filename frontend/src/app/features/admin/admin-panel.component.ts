@@ -387,9 +387,18 @@ export class AdminPanelComponent implements OnInit {
   }
 
   async onDeleteProduct(productId: string): Promise<void> {
-    await firstValueFrom(this.productService.deleteProduct(productId));
-    this.products.update(list => list.filter(p => p.id !== productId));
-    this.updateStats(this.orders(), this.products().length);
+    try {
+      await firstValueFrom(this.productService.deleteProduct(productId));
+      this.products.update(list => list.filter(p => p.id !== productId));
+      this.updateStats(this.orders(), this.products().length);
+    } catch (err: any) {
+      const status = err?.status;
+      if (status === 403 || status === 401) {
+        alert('Нет прав для удаления продукта. Войдите как администратор.');
+      } else {
+        alert('Ошибка при удалении продукта. Попробуйте ещё раз.');
+      }
+    }
   }
 
   onImageFileChange(event: Event): void {

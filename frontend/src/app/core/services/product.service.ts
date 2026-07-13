@@ -79,12 +79,11 @@ export class ProductService {
   }
 
   deleteProduct(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/api/products/${id}`).pipe(
-      catchError(() => {
-        this.localProducts = this.localProducts.filter(p => p.id !== id);
-        return of(undefined);
-      })
-    );
+    if (id.startsWith('local-')) {
+      this.localProducts = this.localProducts.filter(p => p.id !== id);
+      return of(undefined);
+    }
+    return this.http.delete<void>(`${this.baseUrl}/api/products/${id}`);
   }
 
   getProductsPaged(page: number, size = 10, search = '', category = ''): Observable<{ items: Product[]; totalPages: number; totalElements: number }> {
