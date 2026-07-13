@@ -379,11 +379,13 @@ export class NavbarComponent implements OnInit {
   };
 
   ngOnInit(): void {
-    this.categories = this.productService.getCategories();
-    this.categoryItems = this.categories.map(cat => ({
-      key:   NavbarComponent.CATEGORY_KEYS[cat] ?? `CATEGORIES.${cat.toUpperCase()}`,
-      value: cat,
-    }));
+    this.productService.getCategories().subscribe(cats => {
+      this.categories = cats;
+      this.categoryItems = cats.map(cat => ({
+        key:   NavbarComponent.CATEGORY_KEYS[cat] ?? `CATEGORIES.${cat.toUpperCase()}`,
+        value: cat,
+      }));
+    });
     if (this.auth.isAuthenticated()) {
       this.auth.loadUserBalance();
       const uid = this.auth.user()?.walletUserId ?? this.auth.user()?.userId ?? Number(this.auth.user()?.id);
