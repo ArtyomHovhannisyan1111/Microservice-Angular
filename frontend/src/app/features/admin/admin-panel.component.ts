@@ -139,9 +139,9 @@ type Tab = 'orders' | 'products';
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{{ 'ADMIN.CATEGORY' | translate }}</label>
               <select formControlName="category" class="input-field">
-                <option value="" disabled>{{ 'ADMIN.SELECT_CATEGORY' | translate }}</option>
+                <option value="" disabled>Выберите категорию</option>
                 @for (cat of categories; track cat) {
-                  <option [value]="cat">{{ catKey(cat) | translate }}</option>
+                  <option [value]="cat">{{ cat }}</option>
                 }
               </select>
             </div>
