@@ -166,6 +166,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/microservice_db
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
+      JAVA_TOOL_OPTIONS: "-Xms64m -Xmx256m"
     restart: always
     networks:
       - ecommerce-network
@@ -192,6 +193,7 @@ services:
       PRODUCT_SERVICE_URL: http://product-service:8080
       USER_SERVICE_URL: http://user-service:8080
       NOTIFICATION_SERVICE_URL: http://notification-service:8080
+      JAVA_TOOL_OPTIONS: "-Xms64m -Xmx256m"
     restart: always
     networks:
       - ecommerce-network
@@ -217,6 +219,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: postgres
       MAIL_USERNAME: ${MAIL_USERNAME}
       MAIL_PASSWORD: ${MAIL_PASSWORD}
+      JAVA_TOOL_OPTIONS: "-Xms64m -Xmx200m"
     restart: always
     networks:
       - ecommerce-network
@@ -242,6 +245,7 @@ services:
       MAIL_USERNAME: ${MAIL_USERNAME}
       MAIL_PASSWORD: ${MAIL_PASSWORD}
       USER_SERVICE_URL: http://user-service:8080
+      JAVA_TOOL_OPTIONS: "-Xms64m -Xmx200m"
     restart: always
     networks:
       - ecommerce-network
@@ -265,6 +269,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db-users:5432/users_db
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
+      JAVA_TOOL_OPTIONS: "-Xms64m -Xmx200m"
     restart: always
     networks:
       - ecommerce-network
@@ -307,6 +312,7 @@ services:
       MINIO_SECRET_KEY: CHANGEME123
       MINIO_BUCKET_NAME: order-images
       MINIO_REGION: us-east-1
+      JAVA_TOOL_OPTIONS: "-Xms64m -Xmx200m"
     restart: always
     networks:
       - ecommerce-network
@@ -332,6 +338,7 @@ services:
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       ORDER_SERVICE_URL: http://order-service:8080
       PRODUCT_SERVICE_URL: http://product-service:8080
+      JAVA_TOOL_OPTIONS: "-Xms64m -Xmx200m"
     restart: always
     networks:
       - ecommerce-network
@@ -363,6 +370,7 @@ services:
       IMAGE_SERVICE_URL: http://image-service:8080
       ANALYTICS_SERVICE_URL: http://analytics-service:8080
       PAYMENT_SERVICE_URL: http://payment-service:8080
+      JAVA_TOOL_OPTIONS: "-Xms64m -Xmx256m"
     restart: always
     networks:
       - ecommerce-network
@@ -406,6 +414,7 @@ services:
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
       USER_SERVICE_URL: http://user-service:8080
+      JAVA_TOOL_OPTIONS: "-Xms64m -Xmx200m"
     restart: always
     networks:
       - ecommerce-network
