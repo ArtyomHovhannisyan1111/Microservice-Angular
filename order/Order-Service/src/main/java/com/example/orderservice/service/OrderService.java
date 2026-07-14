@@ -7,6 +7,7 @@ import com.example.orderservice.exception.ResourceNotFoundException;
 import com.example.orderservice.mapper.OrderMapper;
 import com.example.orderservice.model.*;
 import com.example.orderservice.util.OrderValidationUtil;
+import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -43,7 +44,23 @@ public class OrderService {
         productFeignClient.decreaseStock(request.getProductId(), new StockUpdateRequest(request.getQuantity()));
 
         BigDecimal total = product.getPrice().multiply(BigDecimal.valueOf(request.getQuantity()));
-        userServiceClient.deductBalance(request.getUserId(), Map.of("amount", total));
+        try {
+            userServiceClient.deductBalance(request.getUserId(), Map.of("amount", total));
+        } catch (FeignException.BadRequest e) {
+            productFeignClient.increaseStock(request.getProductId(), new StockUpdateRequest(request.getQuantity()));
+            if (request.getUserEmail() != null) {
+                try {
+                    notificationFeignClient.cancelOrder(NotificationConfirmRequest.builder()
+                            .orderId(0L)
+                            .userId(request.getUserId() != null ? request.getUserId().longValue() : 0L)
+                            .userEmail(request.getUserEmail())
+                            .totalPrice(total)
+                            .userName(request.getUserName())
+                            .build());
+                } catch (Exception ignored) {}
+            }
+            throw new IllegalStateException("Недостаточно средств на балансе");
+        }
 
         Order entity = OrderMapper.toEntity(request);
         entity.setStatus(OrderStatus.PENDING);
