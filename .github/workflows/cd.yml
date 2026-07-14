@@ -12,6 +12,7 @@ jobs:
           port: 2222
           username: root
           key: ${{ secrets.SERVER_SSH_KEY }}
+          command_timeout: 30m
           script: |
             cd /root/mikroservis
             git pull origin master
