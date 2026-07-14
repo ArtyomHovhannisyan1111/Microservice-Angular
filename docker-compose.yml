@@ -247,6 +247,7 @@ services:
       MAIL_USERNAME: ${MAIL_USERNAME}
       MAIL_PASSWORD: ${MAIL_PASSWORD}
       USER_SERVICE_URL: http://user-service:8080
+      FRONTEND_URL: http://167.233.226.5
       JAVA_TOOL_OPTIONS: "-Xms64m -Xmx200m"
     restart: always
     networks:

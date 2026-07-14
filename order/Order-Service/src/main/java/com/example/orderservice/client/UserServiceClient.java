@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import java.math.BigDecimal;
 import java.util.Map;
 
-@FeignClient(name = "user-service", path = "/api/users")
+@FeignClient(name = "user-service", url = "${USER_SERVICE_URL:http://localhost:8088}", path = "/api/users")
 public interface UserServiceClient {
 
     @PostMapping("/{id}/deduct-balance")
