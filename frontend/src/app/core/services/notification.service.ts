@@ -46,6 +46,7 @@ export class NotificationService {
   async markAsRead(id: string): Promise<void> {
     const prev = this._items().find(n => n.id === id)?.read ?? false;
     this._items.update(list => list.map(n => n.id === id ? { ...n, read: true } : n));
+    if (id.startsWith('local-')) return;
     try {
       await firstValueFrom(
         this.http.post<void>(`${this.baseUrl}/api/notifications/${id}/read`, {})
@@ -58,13 +59,14 @@ export class NotificationService {
   async markAllAsRead(): Promise<void> {
     const unread = this._items().filter(n => !n.read);
     this._items.update(list => list.map(n => ({ ...n, read: true })));
+    const backendUnread = unread.filter(n => !n.id.startsWith('local-'));
     const results = await Promise.allSettled(
-      unread.map(n =>
+      backendUnread.map(n =>
         firstValueFrom(this.http.post<void>(`${this.baseUrl}/api/notifications/${n.id}/read`, {}))
       )
     );
     const failedIds = new Set(
-      unread.filter((_, i) => results[i].status === 'rejected').map(n => n.id)
+      backendUnread.filter((_, i) => results[i].status === 'rejected').map(n => n.id)
     );
     if (failedIds.size > 0) {
       this._items.update(list => list.map(n => failedIds.has(n.id) ? { ...n, read: false } : n));
