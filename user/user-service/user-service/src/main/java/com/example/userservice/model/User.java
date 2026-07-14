@@ -32,7 +32,7 @@ public class User {
     private String password;
 
     @Column(nullable = false)
-    private String role; // USER, ADMIN, MANAGER
+    private String role;
 
     @Column(nullable = false)
     private BigDecimal balance = BigDecimal.ZERO;
