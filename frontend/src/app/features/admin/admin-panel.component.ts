@@ -1,8 +1,8 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { firstValueFrom } from 'rxjs';
-import { TranslateModule } from '@ngx-translate/core';
+import { firstValueFrom, Subscription } from 'rxjs';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { OrderService } from '../../core/services/order.service';
 import { ProductService } from '../../core/services/product.service';
 import { ImageService } from '../../core/services/image.service';
@@ -140,8 +140,8 @@ type Tab = 'orders' | 'products';
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{{ 'ADMIN.CATEGORY' | translate }}</label>
               <select formControlName="category" class="input-field">
                 <option value="" disabled>{{ 'ADMIN.SELECT_CATEGORY' | translate }}</option>
-                @for (cat of categories; track cat) {
-                  <option [value]="cat">{{ catKey(cat) | translate }}</option>
+                @for (cat of translatedCategories(); track cat.value) {
+                  <option [value]="cat.value">{{ cat.label }}</option>
                 }
               </select>
             </div>
@@ -277,11 +277,13 @@ type Tab = 'orders' | 'products';
     </div>
   `
 })
-export class AdminPanelComponent implements OnInit {
-  private orderService   = inject(OrderService);
-  private productService = inject(ProductService);
-  private imageService   = inject(ImageService);
-  private fb             = inject(FormBuilder);
+export class AdminPanelComponent implements OnInit, OnDestroy {
+  private orderService     = inject(OrderService);
+  private productService   = inject(ProductService);
+  private imageService     = inject(ImageService);
+  private fb               = inject(FormBuilder);
+  private translateService = inject(TranslateService);
+  private langSub!: Subscription;
 
   private static readonly CATEGORY_KEYS: Record<string, string> = {
     'Электроника': 'CATEGORIES.ELECTRONICS',
@@ -291,10 +293,17 @@ export class AdminPanelComponent implements OnInit {
     'Аксессуары':  'CATEGORIES.ACCESSORIES',
   };
 
-  categories: string[] = ['Электроника', 'Периферия', 'Мониторы', 'Аудио', 'Аксессуары'];
+  private static readonly CATEGORY_VALUES = Object.keys(AdminPanelComponent.CATEGORY_KEYS);
 
-  catKey(cat: string): string {
-    return AdminPanelComponent.CATEGORY_KEYS[cat] ?? cat;
+  readonly translatedCategories = signal<{ value: string; label: string }[]>([]);
+
+  private buildCategories(): void {
+    this.translatedCategories.set(
+      AdminPanelComponent.CATEGORY_VALUES.map(v => ({
+        value: v,
+        label: this.translateService.instant(AdminPanelComponent.CATEGORY_KEYS[v])
+      }))
+    );
   }
 
   readonly activeTab       = signal<Tab>('orders');
@@ -329,8 +338,14 @@ export class AdminPanelComponent implements OnInit {
   get pf() { return this.productForm.controls; }
 
   ngOnInit(): void {
+    this.buildCategories();
+    this.langSub = this.translateService.onLangChange.subscribe(() => this.buildCategories());
     this.loadOrders();
     this.loadProducts();
+  }
+
+  ngOnDestroy(): void {
+    this.langSub?.unsubscribe();
   }
 
   private loadOrders(): void {
@@ -379,7 +394,7 @@ export class AdminPanelComponent implements OnInit {
       })
     );
     this.products.update(list => [product, ...list]);
-    this.productForm.reset({ rating: 4.0, price: 0, stock: 0, category: '' });
+    this.productForm.reset({ rating: 4.0, price: 0, stock: 0 });
     this.addingProduct.set(false);
     this.addSuccess.set(true);
     setTimeout(() => this.addSuccess.set(false), 3000);
