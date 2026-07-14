@@ -13,8 +13,9 @@ public class ProductMapper {
                 .quantity(productRequest.getQuantity())
                 .imageUrl(productRequest.getImageUrl())
                 .category(productRequest.getCategory())
+                .categoryId(productRequest.getCategoryId())
                 .description(productRequest.getDescription())
-                .rating(0.0)
+                .rating(productRequest.getRating() != null ? productRequest.getRating() : 0.0)
                 .build();
     }
 }

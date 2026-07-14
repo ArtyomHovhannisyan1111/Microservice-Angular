@@ -127,6 +127,9 @@ type Tab = 'orders' | 'products';
 
       <!-- PRODUCTS TAB -->
       @if (activeTab() === 'products') {
+
+        <!-- ADD FORM (hidden while editing) -->
+        @if (!editingProduct()) {
         <div class="card p-6 mb-6">
           <h3 class="font-semibold text-gray-900 dark:text-white mb-4">{{ 'ADMIN.ADD_PRODUCT_TITLE' | translate }}</h3>
           <form [formGroup]="productForm" (ngSubmit)="addProduct()" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -140,7 +143,7 @@ type Tab = 'orders' | 'products';
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{{ 'ADMIN.CATEGORY' | translate }}</label>
               <select formControlName="category" class="input-field">
                 <option value="" disabled>{{ 'ADMIN.SELECT_CATEGORY' | translate }}</option>
-                @for (cat of categories; track cat) {
+                @for (cat of categories(); track cat) {
                   <option [value]="cat">{{ catKey(cat) | translate }}</option>
                 }
               </select>
@@ -157,18 +160,12 @@ type Tab = 'orders' | 'products';
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{{ 'ADMIN.STOCK' | translate }}</label>
               <input formControlName="stock" type="number" class="input-field" placeholder="0" min="0">
             </div>
-
-            <!-- Image field with upload button -->
             <div class="sm:col-span-2">
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                {{ 'ADMIN.IMAGE_URL' | translate }}
-              </label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{{ 'ADMIN.IMAGE_URL' | translate }}</label>
               <div class="flex gap-2">
                 <input formControlName="imageUrl" type="text" class="input-field flex-1"
                        [placeholder]="'ADMIN.IMAGE_URL_PH' | translate">
-                <button type="button"
-                        (click)="imgFileInput.click()"
-                        [disabled]="imgUploading"
+                <button type="button" (click)="imgFileInput.click()" [disabled]="imgUploading"
                         class="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 transition-colors">
                   @if (imgUploading) {
                     <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
@@ -184,21 +181,14 @@ type Tab = 'orders' | 'products';
                   }
                 </button>
               </div>
-              <input #imgFileInput type="file" accept=".jpg,.jpeg,.png,.webp" class="hidden"
-                     (change)="onImageFileChange($event)">
-              @if (imgError) {
-                <p class="mt-1 text-xs text-red-500">{{ 'ADMIN.IMAGE_UPLOAD_ERROR' | translate }}</p>
-              }
+              <input #imgFileInput type="file" accept=".jpg,.jpeg,.png,.webp" class="hidden" (change)="onImageFileChange($event)">
+              @if (imgError) { <p class="mt-1 text-xs text-red-500">{{ 'ADMIN.IMAGE_UPLOAD_ERROR' | translate }}</p> }
               @if (pf['imageUrl'].value) {
-                <img [src]="pf['imageUrl'].value | imageUrl"
-                     class="mt-2 h-16 w-16 rounded-lg object-cover border border-gray-200 dark:border-gray-700"
-                     (error)="onImgError($event)">
+                <img [src]="pf['imageUrl'].value | imageUrl" class="mt-2 h-16 w-16 rounded-lg object-cover border border-gray-200 dark:border-gray-700" (error)="onImgError($event)">
               }
             </div>
-
             <div class="sm:col-span-2 flex items-center gap-3">
-              <button type="submit" [disabled]="productForm.invalid || addingProduct()"
-                      class="btn-primary flex items-center gap-2">
+              <button type="submit" [disabled]="productForm.invalid || addingProduct()" class="btn-primary flex items-center gap-2">
                 @if (addingProduct()) {
                   <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -218,6 +208,103 @@ type Tab = 'orders' | 'products';
             </div>
           </form>
         </div>
+        }
+
+        <!-- EDIT FORM -->
+        @if (editingProduct()) {
+        <div class="card p-6 mb-6 border-l-4 border-primary-500">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-semibold text-gray-900 dark:text-white">
+              {{ 'ADMIN.EDIT_PRODUCT_TITLE' | translate }}: <span class="text-primary-600 dark:text-primary-400">{{ editingProduct()!.name }}</span>
+            </h3>
+            <button type="button" (click)="cancelEdit()"
+                    class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+          <form [formGroup]="editForm" (ngSubmit)="saveEdit()" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{{ 'ADMIN.PRODUCT_NAME' | translate }}</label>
+              <input formControlName="name" type="text" class="input-field"
+                     [placeholder]="'ADMIN.PRODUCT_NAME_PH' | translate"
+                     [class.border-red-500]="ef['name'].invalid && ef['name'].touched">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{{ 'ADMIN.CATEGORY' | translate }}</label>
+              <select formControlName="category" class="input-field">
+                <option value="" disabled>{{ 'ADMIN.SELECT_CATEGORY' | translate }}</option>
+                @for (cat of categories(); track cat) {
+                  <option [value]="cat">{{ catKey(cat) | translate }}</option>
+                }
+              </select>
+            </div>
+            <div class="sm:col-span-2">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{{ 'ADMIN.DESCRIPTION' | translate }}</label>
+              <input formControlName="description" type="text" class="input-field" [placeholder]="'ADMIN.DESCRIPTION_PH' | translate">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{{ 'ADMIN.PRICE' | translate }}</label>
+              <input formControlName="price" type="number" class="input-field" placeholder="0" min="0">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{{ 'ADMIN.STOCK' | translate }}</label>
+              <input formControlName="stock" type="number" class="input-field" placeholder="0" min="0">
+            </div>
+            <div class="sm:col-span-2">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{{ 'ADMIN.IMAGE_URL' | translate }}</label>
+              <div class="flex gap-2">
+                <input formControlName="imageUrl" type="text" class="input-field flex-1"
+                       [placeholder]="'ADMIN.IMAGE_URL_PH' | translate">
+                <button type="button" (click)="editImgFileInput.click()" [disabled]="editImgUploading"
+                        class="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 transition-colors">
+                  @if (editImgUploading) {
+                    <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                    {{ editImgProgress }}%
+                  } @else {
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                    </svg>
+                    {{ 'ADMIN.UPLOAD_IMAGE' | translate }}
+                  }
+                </button>
+              </div>
+              <input #editImgFileInput type="file" accept=".jpg,.jpeg,.png,.webp" class="hidden" (change)="onEditImageFileChange($event)">
+              @if (editImgError) { <p class="mt-1 text-xs text-red-500">{{ 'ADMIN.IMAGE_UPLOAD_ERROR' | translate }}</p> }
+              @if (ef['imageUrl'].value) {
+                <img [src]="ef['imageUrl'].value | imageUrl" class="mt-2 h-16 w-16 rounded-lg object-cover border border-gray-200 dark:border-gray-700" (error)="onImgError($event)">
+              }
+            </div>
+            <div class="sm:col-span-2 flex items-center gap-3">
+              <button type="button" (click)="cancelEdit()"
+                      class="px-4 py-2 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                {{ 'COMMON.CANCEL' | translate }}
+              </button>
+              <button type="submit" [disabled]="editForm.invalid || savingEdit()" class="btn-primary flex items-center gap-2">
+                @if (savingEdit()) {
+                  <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                  </svg>
+                }
+                {{ (savingEdit() ? 'ADMIN.SAVING' : 'COMMON.SAVE') | translate }}
+              </button>
+              @if (editSuccess()) {
+                <span class="text-sm text-green-600 dark:text-green-400 flex items-center gap-1">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                  </svg>
+                  {{ 'ADMIN.PRODUCT_SAVED' | translate }}
+                </span>
+              }
+            </div>
+          </form>
+        </div>
+        }
 
         @if (loadingProducts()) {
           <div class="card p-8 text-center">
@@ -258,13 +345,22 @@ type Tab = 'orders' | 'products';
                         </span>
                       </td>
                       <td class="px-4 py-3 text-center">
-                        <button (click)="onDeleteProduct(product.id)"
-                                class="text-red-400 hover:text-red-600 dark:hover:text-red-400 transition-colors p-1 rounded">
-                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                          </svg>
-                        </button>
+                        <div class="flex items-center justify-center gap-1">
+                          <button (click)="startEdit(product)"
+                                  class="text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors p-1 rounded">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                            </svg>
+                          </button>
+                          <button (click)="onDeleteProduct(product.id)"
+                                  class="text-red-400 hover:text-red-600 dark:hover:text-red-400 transition-colors p-1 rounded">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   }
@@ -291,7 +387,7 @@ export class AdminPanelComponent implements OnInit {
     'Аксессуары':  'CATEGORIES.ACCESSORIES',
   };
 
-  categories: string[] = ['Электроника', 'Периферия', 'Мониторы', 'Аудио', 'Аксессуары'];
+  readonly categories = signal<string[]>(['Электроника', 'Периферия', 'Мониторы', 'Аудио', 'Аксессуары']);
 
   catKey(cat: string): string {
     return AdminPanelComponent.CATEGORY_KEYS[cat] ?? cat;
@@ -304,10 +400,16 @@ export class AdminPanelComponent implements OnInit {
   readonly loadingProducts = signal(true);
   readonly addingProduct   = signal(false);
   readonly addSuccess      = signal(false);
+  readonly editingProduct  = signal<Product | null>(null);
+  readonly savingEdit      = signal(false);
+  readonly editSuccess     = signal(false);
 
-  imgUploading = false;
-  imgProgress  = 0;
-  imgError     = false;
+  imgUploading     = false;
+  imgProgress      = 0;
+  imgError         = false;
+  editImgUploading = false;
+  editImgProgress  = 0;
+  editImgError     = false;
 
   readonly stats = signal([
     { labelKey: 'ADMIN.TOTAL_ORDERS', value: 0, color: 'text-primary-600 dark:text-primary-400' },
@@ -326,11 +428,25 @@ export class AdminPanelComponent implements OnInit {
     imageUrl:    ['']
   });
 
+  editForm = this.fb.group({
+    name:        ['', Validators.required],
+    description: ['', Validators.required],
+    category:    ['', Validators.required],
+    price:       [0,  [Validators.required, Validators.min(1)]],
+    stock:       [0,  [Validators.required, Validators.min(0)]],
+    rating:      [4.0],
+    imageUrl:    ['']
+  });
+
   get pf() { return this.productForm.controls; }
+  get ef() { return this.editForm.controls; }
 
   ngOnInit(): void {
     this.loadOrders();
     this.loadProducts();
+    this.productService.getCategories().subscribe(cats => {
+      if (cats.length) this.categories.set(cats);
+    });
   }
 
   private loadOrders(): void {
@@ -399,6 +515,68 @@ export class AdminPanelComponent implements OnInit {
         alert('Ошибка при удалении продукта. Попробуйте ещё раз.');
       }
     }
+  }
+
+  startEdit(product: Product): void {
+    this.editingProduct.set(product);
+    this.editForm.patchValue({
+      name:        product.name,
+      description: product.description,
+      category:    product.category,
+      price:       product.price,
+      stock:       product.stock,
+      rating:      product.rating ?? 4.0,
+      imageUrl:    product.imageUrl ?? ''
+    });
+    this.editImgError = false;
+  }
+
+  cancelEdit(): void {
+    this.editingProduct.set(null);
+    this.editForm.reset({ rating: 4.0, price: 0, stock: 0, category: '' });
+  }
+
+  async saveEdit(): Promise<void> {
+    if (this.editForm.invalid) { this.editForm.markAllAsTouched(); return; }
+    const product = this.editingProduct();
+    if (!product) return;
+    this.savingEdit.set(true);
+    const raw = this.editForm.getRawValue();
+    const updated = await firstValueFrom(
+      this.productService.updateProduct(product.id, {
+        name:        raw.name!,
+        description: raw.description!,
+        category:    raw.category!,
+        price:       Number(raw.price),
+        stock:       Number(raw.stock),
+        rating:      raw.rating ?? 4.0,
+        imageUrl:    raw.imageUrl || undefined,
+        image:       raw.imageUrl || undefined
+      })
+    );
+    this.products.update(list => list.map(p => p.id === updated.id ? updated : p));
+    this.savingEdit.set(false);
+    this.editSuccess.set(true);
+    setTimeout(() => { this.editSuccess.set(false); this.cancelEdit(); }, 1500);
+  }
+
+  onEditImageFileChange(event: Event): void {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    this.editImgUploading = true;
+    this.editImgProgress  = 0;
+    this.editImgError     = false;
+    this.imageService.upload(file, 'products').subscribe({
+      next: e => {
+        if (e.type === 'progress') {
+          this.editImgProgress = e.progress;
+        } else {
+          this.ef['imageUrl'].setValue('/api/image/' + e.response.fileName);
+          this.editImgUploading = false;
+        }
+      },
+      error: () => { this.editImgUploading = false; this.editImgError = true; }
+    });
   }
 
   onImageFileChange(event: Event): void {

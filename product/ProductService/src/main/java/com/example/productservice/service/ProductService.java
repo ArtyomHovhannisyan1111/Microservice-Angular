@@ -70,7 +70,11 @@ public class ProductService {
         product.setQuantity(request.getQuantity());
         product.setImageUrl(request.getImageUrl());
         product.setCategory(request.getCategory());
+        product.setCategoryId(request.getCategoryId());
         product.setDescription(request.getDescription());
+        if (request.getRating() != null) {
+            product.setRating(request.getRating());
+        }
 
         Product updatedProduct = productRepository.save(product);
         publishProductEvent(updatedProduct);

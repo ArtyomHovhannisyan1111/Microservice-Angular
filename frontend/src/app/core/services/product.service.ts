@@ -43,6 +43,13 @@ export class ProductService {
     return this.http.post<Product>(`${this.baseUrl}/api/products`, body);
   }
 
+  updateProduct(id: string, data: Omit<Product, 'id'>): Observable<Product> {
+    const body = { ...data, quantity: data.stock };
+    return this.http.put<any>(`${this.baseUrl}/api/products/${id}`, body).pipe(
+      map(p => this.normalize(p))
+    );
+  }
+
   deleteProduct(id: string): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/api/products/${id}`);
   }
