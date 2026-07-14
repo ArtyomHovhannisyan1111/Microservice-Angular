@@ -45,7 +45,10 @@ public class OrderService {
         BigDecimal total = product.getPrice().multiply(BigDecimal.valueOf(request.getQuantity()));
         userServiceClient.deductBalance(request.getUserId(), Map.of("amount", total));
 
-        Order order = orderRepository.save(OrderMapper.toEntity(request).setStatus(OrderStatus.PENDING).setTotalPrice(total));
+        Order entity = OrderMapper.toEntity(request);
+        entity.setStatus(OrderStatus.PENDING);
+        entity.setTotalPrice(total);
+        Order order = orderRepository.save(entity);
 
         requestLogService.logRequest(request.getRequestId());
         publishOrderEvents(order, product);
