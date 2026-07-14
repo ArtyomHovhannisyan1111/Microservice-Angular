@@ -66,8 +66,8 @@ export class ProductService {
   }
 
   getCategories(): Observable<string[]> {
-    return this.getProducts().pipe(
-      map(products => [...new Set(products.map(p => p.category))])
+    return this.http.get<string[]>(`${this.baseUrl}/api/products/categories`).pipe(
+      catchError(() => of([] as string[]))
     );
   }
 }

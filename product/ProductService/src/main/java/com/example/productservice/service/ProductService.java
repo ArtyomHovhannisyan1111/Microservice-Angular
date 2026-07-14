@@ -132,6 +132,10 @@ public class ProductService {
     private Integer getCurrentStock(Product product) {
         return product.getQuantity() == null ? 0 : product.getQuantity();
     }
+    public List<String> getCategories() {
+        return productRepository.findDistinctCategories();
+    }
+
     public Page<ProductResponseDto> getProducts(Long categoryId, String name, String category, Pageable pageable) {
         boolean hasName = name != null && !name.isBlank();
         boolean hasCat  = category != null && !category.isBlank();

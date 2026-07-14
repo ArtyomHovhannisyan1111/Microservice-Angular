@@ -18,7 +18,8 @@ import { ProductCardComponent } from './product-card/product-card.component';
   template: `
     <div>
       <!-- Header -->
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+      <div class="mb-8">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ 'CATALOG.TITLE' | translate }}</h1>
           <p class="text-gray-500 dark:text-gray-400 mt-1">
@@ -49,6 +50,27 @@ import { ProductCardComponent } from './product-card/product-card.component';
             </a>
           }
         </div>
+      </div>
+
+      <!-- Category filter bar -->
+      @if (categoryItems.length > 0) {
+        <div class="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <button (click)="selectCategory('')"
+                  [class]="selectedCategory() === ''
+                    ? 'px-4 py-1.5 rounded-full text-sm font-medium bg-primary-600 text-white transition-colors'
+                    : 'px-4 py-1.5 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors'">
+            {{ 'CATEGORIES.ALL_PRODUCTS' | translate }}
+          </button>
+          @for (cat of categoryItems; track cat.value) {
+            <button (click)="selectCategory(cat.value)"
+                    [class]="selectedCategory() === cat.value
+                      ? 'px-4 py-1.5 rounded-full text-sm font-medium bg-primary-600 text-white transition-colors'
+                      : 'px-4 py-1.5 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors'">
+              {{ cat.key | translate }}
+            </button>
+          }
+        </div>
+      }
       </div>
 
       <!-- Skeleton loading -->
@@ -198,15 +220,35 @@ export class CatalogComponent implements OnInit {
     return result;
   });
 
+  private static readonly CATEGORY_KEYS: Record<string, string> = {
+    'Электроника': 'CATEGORIES.ELECTRONICS',
+    'Периферия':   'CATEGORIES.PERIPHERALS',
+    'Мониторы':    'CATEGORIES.MONITORS',
+    'Аудио':       'CATEGORIES.AUDIO',
+    'Аксессуары':  'CATEGORIES.ACCESSORIES',
+    'ELECTRONICS': 'CATEGORIES.ELECTRONICS',
+    'PERIPHERALS': 'CATEGORIES.PERIPHERALS',
+    'MONITORS':    'CATEGORIES.MONITORS',
+    'AUDIO':       'CATEGORIES.AUDIO',
+    'ACCESSORIES': 'CATEGORIES.ACCESSORIES',
+  };
+
   readonly skeletons = Array(10).fill(0);
   private allProducts: Product[] = [];
   searchQuery = '';
   categories: string[] = [];
+  categoryItems: { key: string; value: string }[] = [];
 
   private searchTimeout: any;
 
   ngOnInit(): void {
-    this.productService.getCategories().subscribe(cats => this.categories = cats);
+    this.productService.getCategories().subscribe(cats => {
+      this.categories = cats;
+      this.categoryItems = cats.map(cat => ({
+        key:   CatalogComponent.CATEGORY_KEYS[cat] ?? `CATEGORIES.${cat.toUpperCase()}`,
+        value: cat,
+      }));
+    });
 
     this.route.queryParamMap.pipe(
       takeUntilDestroyed(this.destroyRef)

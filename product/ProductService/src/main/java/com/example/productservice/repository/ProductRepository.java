@@ -33,4 +33,7 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
     Page<Product> findByCategory(String category, Pageable pageable);
 
     Page<Product> findByNameContainingIgnoreCaseAndCategory(String name, String category, Pageable pageable);
+
+    @Query("SELECT DISTINCT p.category FROM Product p WHERE p.category IS NOT NULL AND p.category <> ''")
+    List<String> findDistinctCategories();
 }

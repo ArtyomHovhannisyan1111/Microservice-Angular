@@ -77,6 +77,11 @@ public class ProductController {
     public Product decreaseStock(@PathVariable Integer id, @Valid @RequestBody StockUpdateRequest request) {
         return productService.decreaseStock(id, request.getQuantity());
     }
+    @GetMapping("/categories")
+    public List<String> getCategories() {
+        return productService.getCategories();
+    }
+
     @GetMapping("/page")
     public ResponseEntity<Page<ProductResponseDto>> getProducts(
         @RequestParam(required = false) Long categoryId,
