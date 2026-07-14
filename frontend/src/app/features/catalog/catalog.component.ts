@@ -39,8 +39,8 @@ import { ProductCardComponent } from './product-card/product-card.component';
           </div>
           <!-- Category dropdown -->
           @if (categoryItems.length > 0) {
-            <select [value]="selectedCategory()"
-                    (change)="selectCategory(($event.target as HTMLSelectElement).value)"
+            <select [ngModel]="selectedCategory()"
+                    (ngModelChange)="selectCategory($event)"
                     class="input-field pr-8 min-w-[140px]">
               <option value="">{{ 'CATEGORIES.ALL_PRODUCTS' | translate }}</option>
               @for (cat of categoryItems; track cat.value) {
