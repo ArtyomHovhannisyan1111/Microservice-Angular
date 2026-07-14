@@ -1,0 +1,114 @@
+<?xml version="1.1" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <changeSet id="6-seed-products" author="admin">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM products WHERE name IN (
+                    'Ноутбук ASUS VivoBook 15',
+                    'Смартфон Samsung Galaxy A55',
+                    'Беспроводные наушники Sony WH-1000XM5',
+                    'Механическая клавиатура Keychron K2',
+                    'Монитор LG 27" 4K',
+                    'Умные часы Apple Watch SE 2',
+                    'Фотокамера Canon EOS R50',
+                    'Игровая мышь Logitech G502 X'
+                )
+            </sqlCheck>
+        </preConditions>
+
+        <insert tableName="products">
+            <column name="name" value="Ноутбук ASUS VivoBook 15"/>
+            <column name="price" valueNumeric="54990.00"/>
+            <column name="quantity" valueNumeric="25"/>
+            <column name="category" value="Ноутбуки"/>
+            <column name="category_id" valueNumeric="1"/>
+            <column name="description" value="15.6&quot; FHD IPS, Intel Core i5-1235U, 16 ГБ RAM, 512 ГБ SSD, Windows 11"/>
+            <column name="rating" valueNumeric="4.5"/>
+            <column name="image_url" value=""/>
+        </insert>
+
+        <insert tableName="products">
+            <column name="name" value="Смартфон Samsung Galaxy A55"/>
+            <column name="price" valueNumeric="34990.00"/>
+            <column name="quantity" valueNumeric="50"/>
+            <column name="category" value="Смартфоны"/>
+            <column name="category_id" valueNumeric="2"/>
+            <column name="description" value="6.6&quot; Super AMOLED, Exynos 1480, 8 ГБ RAM, 256 ГБ, камера 50 МП, 5000 мАч"/>
+            <column name="rating" valueNumeric="4.6"/>
+            <column name="image_url" value=""/>
+        </insert>
+
+        <insert tableName="products">
+            <column name="name" value="Беспроводные наушники Sony WH-1000XM5"/>
+            <column name="price" valueNumeric="29990.00"/>
+            <column name="quantity" valueNumeric="30"/>
+            <column name="category" value="Аудио"/>
+            <column name="category_id" valueNumeric="3"/>
+            <column name="description" value="Накладные наушники с активным шумоподавлением, Bluetooth 5.2, до 30 ч работы"/>
+            <column name="rating" valueNumeric="4.8"/>
+            <column name="image_url" value=""/>
+        </insert>
+
+        <insert tableName="products">
+            <column name="name" value="Механическая клавиатура Keychron K2"/>
+            <column name="price" valueNumeric="8990.00"/>
+            <column name="quantity" valueNumeric="40"/>
+            <column name="category" value="Периферия"/>
+            <column name="category_id" valueNumeric="4"/>
+            <column name="description" value="Компактная 75% клавиатура, Gateron G Pro Red, RGB подсветка, Bluetooth/USB-C"/>
+            <column name="rating" valueNumeric="4.7"/>
+            <column name="image_url" value=""/>
+        </insert>
+
+        <insert tableName="products">
+            <column name="name" value="Монитор LG 27&quot; 4K"/>
+            <column name="price" valueNumeric="39990.00"/>
+            <column name="quantity" valueNumeric="15"/>
+            <column name="category" value="Мониторы"/>
+            <column name="category_id" valueNumeric="5"/>
+            <column name="description" value="27&quot; IPS 4K UHD 3840x2160, 60 Гц, HDR400, USB-C 90W, sRGB 99%"/>
+            <column name="rating" valueNumeric="4.6"/>
+            <column name="image_url" value=""/>
+        </insert>
+
+        <insert tableName="products">
+            <column name="name" value="Умные часы Apple Watch SE 2"/>
+            <column name="price" valueNumeric="24990.00"/>
+            <column name="quantity" valueNumeric="20"/>
+            <column name="category" value="Умные часы"/>
+            <column name="category_id" valueNumeric="6"/>
+            <column name="description" value="40 мм, чип S8, мониторинг сердечного ритма, GPS, водозащита WR50"/>
+            <column name="rating" valueNumeric="4.4"/>
+            <column name="image_url" value=""/>
+        </insert>
+
+        <insert tableName="products">
+            <column name="name" value="Фотокамера Canon EOS R50"/>
+            <column name="price" valueNumeric="69990.00"/>
+            <column name="quantity" valueNumeric="10"/>
+            <column name="category" value="Фотоаппараты"/>
+            <column name="category_id" valueNumeric="7"/>
+            <column name="description" value="24.2 МП APS-C CMOS, 4K видео, Dual Pixel AF, Wi-Fi/Bluetooth, компактный корпус"/>
+            <column name="rating" valueNumeric="4.7"/>
+            <column name="image_url" value=""/>
+        </insert>
+
+        <insert tableName="products">
+            <column name="name" value="Игровая мышь Logitech G502 X"/>
+            <column name="price" valueNumeric="5990.00"/>
+            <column name="quantity" valueNumeric="60"/>
+            <column name="category" value="Периферия"/>
+            <column name="category_id" valueNumeric="4"/>
+            <column name="description" value="25600 DPI HERO сенсор, 13 программируемых кнопок, 89 г, USB-C"/>
+            <column name="rating" valueNumeric="4.8"/>
+            <column name="image_url" value=""/>
+        </insert>
+
+    </changeSet>
+
+</databaseChangeLog>
