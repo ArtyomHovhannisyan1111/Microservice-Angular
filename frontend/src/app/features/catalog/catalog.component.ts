@@ -37,6 +37,17 @@ import { ProductCardComponent } from './product-card/product-card.component';
             <input [(ngModel)]="searchQuery" (ngModelChange)="onSearchChange()"
                    type="text" [placeholder]="'COMMON.SEARCH' | translate" class="input-field pl-10 w-56">
           </div>
+          <!-- Category dropdown -->
+          @if (categoryItems.length > 0) {
+            <select [value]="selectedCategory()"
+                    (change)="selectCategory(($event.target as HTMLSelectElement).value)"
+                    class="input-field pr-8 min-w-[140px]">
+              <option value="">{{ 'CATEGORIES.ALL_PRODUCTS' | translate }}</option>
+              @for (cat of categoryItems; track cat.value) {
+                <option [value]="cat.value">{{ cat.key | translate }}</option>
+              }
+            </select>
+          }
           <!-- Admin: add product button -->
           @if (auth.isAdmin()) {
             <a routerLink="/admin"
@@ -50,27 +61,6 @@ import { ProductCardComponent } from './product-card/product-card.component';
             </a>
           }
         </div>
-      </div>
-
-      <!-- Category filter bar -->
-      @if (categoryItems.length > 0) {
-        <div class="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-          <button (click)="selectCategory('')"
-                  [class]="selectedCategory() === ''
-                    ? 'px-4 py-1.5 rounded-full text-sm font-medium bg-primary-600 text-white transition-colors'
-                    : 'px-4 py-1.5 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors'">
-            {{ 'CATEGORIES.ALL_PRODUCTS' | translate }}
-          </button>
-          @for (cat of categoryItems; track cat.value) {
-            <button (click)="selectCategory(cat.value)"
-                    [class]="selectedCategory() === cat.value
-                      ? 'px-4 py-1.5 rounded-full text-sm font-medium bg-primary-600 text-white transition-colors'
-                      : 'px-4 py-1.5 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors'">
-              {{ cat.key | translate }}
-            </button>
-          }
-        </div>
-      }
       </div>
 
       <!-- Skeleton loading -->
