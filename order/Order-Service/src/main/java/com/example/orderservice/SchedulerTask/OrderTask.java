@@ -29,7 +29,6 @@ public class OrderTask {
             return;
         }
 
-        log.info("Found {} pending orders to process", pendingOrders.size());
 
         for (Order order : pendingOrders) {
             try {
@@ -45,10 +44,7 @@ public class OrderTask {
 
                 order.setStatus(OrderStatus.CONFIRMED);
                 orderRepository.save(order);
-                log.info("Order {} confirmed successfully", order.getId());
-
             } catch (Exception e) {
-                log.error("Failed to process order {}: {}", order.getId(), e.getMessage());
             }
         }
     }

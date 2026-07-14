@@ -1,21 +1,12 @@
 package com.example.orderservice.service;
 
-import com.example.orderservice.Dto.NotificationConfirmRequest;
-import com.example.orderservice.Dto.OrderCreatedEvent;
-import com.example.orderservice.Dto.OrderPlacedEvent;
-import com.example.orderservice.Dto.OrderRequest;
-import com.example.orderservice.Dto.ProductResponse;
-import com.example.orderservice.Dto.StockUpdateRequest;
+import com.example.orderservice.Dto.*;
 import com.example.orderservice.Repository.OrderRepository;
-import com.example.orderservice.client.NotificationFeignClient;
-import com.example.orderservice.client.ProductFeignClient;
-import com.example.orderservice.client.UserServiceClient;
+import com.example.orderservice.client.*;
 import com.example.orderservice.exception.ResourceNotFoundException;
 import com.example.orderservice.mapper.OrderMapper;
-import com.example.orderservice.model.Order;
-import com.example.orderservice.model.OrderStatus;
+import com.example.orderservice.model.*;
 import com.example.orderservice.util.OrderValidationUtil;
-import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -31,83 +22,46 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class OrderService {
 
-    private static final String ORDER_TOPIC         = "order-topic";
-    private static final String ORDER_PLACED_TOPIC  = "order-placed-topic";
+    private static final String ORDER_TOPIC = "order-topic";
+    private static final String ORDER_PLACED_TOPIC = "order-placed-topic";
 
     private final OrderRepository orderRepository;
     private final ProductFeignClient productFeignClient;
-    private final NotificationFeignClient notificationFeignClient;
     private final UserServiceClient userServiceClient;
+    private final NotificationFeignClient notificationFeignClient;
     private final RequestLogService requestLogService;
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
-    @Transactional(rollbackFor = Exception.class, noRollbackFor = IllegalArgumentException.class)
+    @Transactional(rollbackFor = Exception.class)
     public Order createOrder(OrderRequest request) {
-        if (requestLogService.isDuplicate(request.getRequestId())) {
-            log.warn("Duplicate request detected: {}", request.getRequestId());
-            throw new IllegalStateException("Duplicate request: " + request.getRequestId());
-        }
+        OrderValidationUtil.checkDuplicate(request.getRequestId(), requestLogService);
 
         ProductResponse product = productFeignClient.getProduct(request.getProductId());
         OrderValidationUtil.validateProduct(product);
         OrderValidationUtil.validateStock(product, request.getQuantity());
 
-        BigDecimal total = product.getPrice().multiply(BigDecimal.valueOf(request.getQuantity()));
         productFeignClient.decreaseStock(request.getProductId(), new StockUpdateRequest(request.getQuantity()));
 
-        try {
-            userServiceClient.deductBalance(request.getUserId(), Map.of("amount", total));
-        } catch (FeignException e) {
-            productFeignClient.increaseStock(request.getProductId(), new StockUpdateRequest(request.getQuantity()));
+        BigDecimal total = product.getPrice().multiply(BigDecimal.valueOf(request.getQuantity()));
+        userServiceClient.deductBalance(request.getUserId(), Map.of("amount", total));
 
-            if (e.status() == 400) {
-                Order cancelled = OrderMapper.toEntity(request);
-                cancelled.setStatus(OrderStatus.CANCELLED);
-                cancelled.setTotalPrice(total);
-                Order savedCancelled = orderRepository.save(cancelled);
-                log.warn("Order {} cancelled — insufficient balance for userId={}", savedCancelled.getId(), request.getUserId());
+        Order order = orderRepository.save(OrderMapper.toEntity(request).setStatus(OrderStatus.PENDING).setTotalPrice(total));
 
-                sendCancellationNotification(savedCancelled, request);
-
-                throw new IllegalArgumentException("Недостаточно средств на балансе");
-            }
-
-            log.error("User service call failed: status={}, msg={}", e.status(), e.getMessage());
-            throw new IllegalStateException("Сервис оплаты недоступен. Попробуйте позже.");
-        }
-
-        try {
-            Order order = OrderMapper.toEntity(request);
-            order.setStatus(OrderStatus.PENDING);
-            order.setTotalPrice(total);
-            Order saved = orderRepository.save(order);
-            requestLogService.logRequest(request.getRequestId());
-            log.info("Order created: id={}, userId={}, productId={}, total={}",
-                    saved.getId(), saved.getUserId(), saved.getProductId(), saved.getTotalPrice());
-
-            publishOrderEvents(saved, product);
-            return saved;
-        } catch (Exception e) {
-            log.error("Order save failed after balance deduction, restoring stock: {}", e.getMessage());
-            productFeignClient.increaseStock(request.getProductId(), new StockUpdateRequest(request.getQuantity()));
-            throw e;
-        }
+        requestLogService.logRequest(request.getRequestId());
+        publishOrderEvents(order, product);
+        return order;
     }
 
-    private void sendCancellationNotification(Order order, OrderRequest request) {
-        try {
-            notificationFeignClient.cancelOrder(
-                    NotificationConfirmRequest.builder()
-                            .orderId(order.getId().longValue())
-                            .userId(request.getUserId() != null ? request.getUserId().longValue() : 0L)
-                            .userEmail(request.getUserEmail())
-                            .userName(request.getUserName() != null ? request.getUserName() : "Покупатель")
-                            .totalPrice(order.getTotalPrice())
-                            .build()
-            );
-        } catch (Exception e) {
-            log.warn("Failed to send cancellation notification for order {}: {}", order.getId(), e.getMessage());
-        }
+    @Transactional
+    public Order cancelOrder(Integer id) {
+        Order order = findOrder(id);
+        OrderValidationUtil.validateCancelable(order);
+
+        userServiceClient.topUpBalance(order.getUserId(), Map.of("amount", order.getTotalPrice()));
+        productFeignClient.increaseStock(order.getProductId(), new StockUpdateRequest(order.getQuantity()));
+
+        order.setStatus(OrderStatus.CANCELLED);
+        return orderRepository.save(order);
     }
 
     public List<Order> getAllOrders() {
@@ -125,70 +79,26 @@ public class OrderService {
     @Transactional
     public Order updateStatus(Integer id, OrderStatus status) {
         Order order = findOrder(id);
-        OrderValidationUtil.validateStatus(status, order);
         order.setStatus(status);
-        return orderRepository.save(order);
-    }
-
-    @Transactional
-    public Order cancelOrder(Integer id) {
-        Order order = findOrder(id);
-        OrderValidationUtil.validateStatus(OrderStatus.CANCELLED, order);
-
-        // Refund balance and restore stock only if order was active (balance already deducted)
-        if (order.getStatus() == OrderStatus.PENDING || order.getStatus() == OrderStatus.APPROVED) {
-            if (order.getUserId() != null && order.getTotalPrice() != null) {
-                try {
-                    userServiceClient.topUpBalance(order.getUserId(), Map.of("amount", order.getTotalPrice()));
-                    log.info("Balance refunded: userId={}, amount={}", order.getUserId(), order.getTotalPrice());
-                } catch (Exception e) {
-                    log.warn("Failed to refund balance for order {}: {}", id, e.getMessage());
-                }
-            }
-            if (order.getProductId() != null && order.getQuantity() != null) {
-                try {
-                    productFeignClient.increaseStock(order.getProductId(), new StockUpdateRequest(order.getQuantity()));
-                    log.info("Stock restored: productId={}, quantity={}", order.getProductId(), order.getQuantity());
-                } catch (Exception e) {
-                    log.warn("Failed to restore stock for order {}: {}", id, e.getMessage());
-                }
-            }
-        }
-
-        order.setStatus(OrderStatus.CANCELLED);
         return orderRepository.save(order);
     }
 
     @Transactional
     public Order confirmOrder(Integer id, String userEmail, String userName) {
         Order order = findOrder(id);
-
-        if (order.getStatus() == OrderStatus.APPROVED) {
-            order.setStatus(OrderStatus.CONFIRMED);
-            order = orderRepository.save(order);
-        }
-
-        try {
-            NotificationConfirmRequest req = NotificationConfirmRequest.builder()
-                    .orderId(Long.valueOf(id))
-                    .userId(order.getUserId() != null ? Long.valueOf(order.getUserId()) : 0L)
-                    .userEmail(userEmail)
-                    .totalPrice(order.getTotalPrice() != null ? order.getTotalPrice() : BigDecimal.ZERO)
-                    .userName(userName != null ? userName : "Покупатель")
-                    .build();
-            notificationFeignClient.confirmOrder(req);
-        } catch (Exception e) {
-            log.warn("Failed to send confirmation notification for order {}: {}", id, e.getMessage());
-        }
-
+        notificationFeignClient.confirmOrder(NotificationConfirmRequest.builder()
+                .orderId(order.getId().longValue())
+                .userId(order.getUserId() != null ? order.getUserId().longValue() : 0L)
+                .userEmail(userEmail)
+                .totalPrice(order.getTotalPrice())
+                .userName(userName)
+                .build());
         return order;
     }
 
-    @Transactional
     public void deleteOrder(Integer id) {
-        Order order = findOrder(id);
-        orderRepository.delete(order);
-        log.info("Order deleted: id={}", id);
+        findOrder(id);
+        orderRepository.deleteById(id);
     }
 
     private Order findOrder(Integer id) {
@@ -197,30 +107,23 @@ public class OrderService {
     }
 
     private void publishOrderEvents(Order order, ProductResponse product) {
-        try {
-            kafkaTemplate.send(ORDER_TOPIC, new OrderCreatedEvent(
-                    order.getId().longValue(),
-                    order.getUserId() != null ? order.getUserId().longValue() : 0L,
-                    order.getTotalPrice(),
-                    order.getStatus().name()
-            ));
-        } catch (Exception e) {
-            log.warn("Failed to publish to {}: {}", ORDER_TOPIC, e.getMessage());
-        }
+        kafkaTemplate.send(ORDER_TOPIC, new OrderCreatedEvent(
+                order.getId().longValue(),
+                order.getUserId() != null ? order.getUserId().longValue() : 0L,
+                order.getTotalPrice(),
+                order.getStatus().name()
+        ));
 
-        try {
-            var item = new OrderPlacedEvent.OrderItemEvent(
-                    product.getProductId() != null ? product.getProductId().longValue() : 0L,
-                    product.getName(),
-                    order.getQuantity(),
-                    product.getPrice() != null ? product.getPrice().doubleValue() : 0.0
-            );
-            kafkaTemplate.send(ORDER_PLACED_TOPIC, new OrderPlacedEvent(
-                    order.getId().longValue(),
-                    List.of(item)
-            ));
-        } catch (Exception e) {
-            log.warn("Failed to publish to {}: {}", ORDER_PLACED_TOPIC, e.getMessage());
-        }
+        OrderPlacedEvent.OrderItemEvent item = new OrderPlacedEvent.OrderItemEvent(
+                product.getProductId() != null ? product.getProductId().longValue() : 0L,
+                product.getName(),
+                order.getQuantity(),
+                product.getPrice() != null ? product.getPrice().doubleValue() : 0.0
+        );
+
+        kafkaTemplate.send(ORDER_PLACED_TOPIC, new OrderPlacedEvent(
+                order.getId().longValue(),
+                List.of(item)
+        ));
     }
 }

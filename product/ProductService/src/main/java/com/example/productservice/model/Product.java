@@ -19,7 +19,7 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class Product implements Serializable {
+public class Product{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;

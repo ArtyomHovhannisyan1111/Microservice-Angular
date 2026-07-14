@@ -32,12 +32,15 @@ public class ProductService {
     public Product getProduct(Integer id) {
         return findProduct(id);
     }
-
     public List<Product> searchProducts(String name) {
-        if (name == null || name.isBlank()) return getProducts();
+        if (name == null || name.isBlank()) return productRepository.findAll();
         return productRepository.findByNameContainingIgnoreCase(name);
     }
 
+    public Page<Product> searchProducts(String name, Pageable pageable) {
+        if (name == null || name.isBlank()) return productRepository.findAll(pageable);
+        return productRepository.findByNameContainingIgnoreCase(name, pageable);
+    }
     public List<Product> getLowStockProducts(Integer threshold) {
         ProductValidationUtils.validateThreshold(threshold);
         return productRepository.findByQuantityLessThanEqual(threshold);

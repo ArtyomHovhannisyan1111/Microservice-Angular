@@ -29,7 +29,7 @@ public class AuthService {
     private final UserAuthRepository userRepo;
     private final PasswordEncoder encoder;
     private final JwtUtilAuth jwt;
-    private final PasswordResetTokenRepository tokenRepo;
+    private final PasswordResetTokenRepository tokenRepository;
     private final EmailService email;
     private final RestTemplate rest;
     private final AuthConfig conf;
@@ -57,9 +57,9 @@ public class AuthService {
     @Transactional
     public ResponseEntity<String> forgotPassword(ForgotPasswordRequest req) {
         userRepo.findByUsername(req.getUsername()).ifPresent(u -> {
-            tokenRepo.deleteByUsername(u.getUsername());
+            tokenRepository.deleteByUsername(u.getUsername());
             String token = UUID.randomUUID().toString();
-            tokenRepo.save(new PasswordResetToken(null, token, u.getUsername(), LocalDateTime.now().plusHours(24)));
+            tokenRepository .save(new PasswordResetToken(null, token, u.getUsername(), LocalDateTime.now().plusHours(24)));
             email.sendPasswordResetEmail(u.getUsername(), conf.getFrontendUrl() + "/reset?token=" + token);
         });
         return ResponseEntity.ok("Email sent if exists");
@@ -67,12 +67,12 @@ public class AuthService {
 
     @Transactional
     public ResponseEntity<String> resetPassword(ResetPasswordRequest req) {
-        PasswordResetToken t = tokenRepo.findByToken(req.getToken()).filter(x -> x.getExpiresAt().isAfter(LocalDateTime.now()))
+        PasswordResetToken token = tokenRepository.findByToken(req.getToken()).filter(x -> x.getExpiresAt().isAfter(LocalDateTime.now()))
                 .orElseThrow(() -> new RuntimeException("Invalid/Expired"));
-        UserAuth user = userRepo.findByUsername(t.getUsername()).orElseThrow();
+        UserAuth user = userRepo.findByUsername(token.getUsername()).orElseThrow();
         user.setPassword(encoder.encode(req.getNewPassword()));
         userRepo.save(user);
-        tokenRepo.delete(t);
+        tokenRepository.delete(token);
         return ResponseEntity.ok("Changed");
     }
 
