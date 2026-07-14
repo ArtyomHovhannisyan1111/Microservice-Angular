@@ -284,7 +284,7 @@ services:
   auth-service:
     image: ${DOCKER_HUB_USER}/auth-service:latest
     build:
-      context: ./auth2/auth-service
+      context: ./auth/auth-service
       dockerfile: ../../gateway/Dockerfile
     container_name: auth-service
     depends_on:
