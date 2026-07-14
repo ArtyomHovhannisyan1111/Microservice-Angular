@@ -9,6 +9,11 @@ services:
       ZOOKEEPER_CLIENT_PORT: 2181
     networks:
       - ecommerce-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   kafka:
     image: confluentinc/cp-kafka:7.6.1
@@ -27,6 +32,11 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
     networks:
       - ecommerce-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   db:
     image: postgres:15
@@ -47,6 +57,11 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   db-orders:
     image: postgres:15
@@ -67,6 +82,11 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   db-notifications:
     image: postgres:15
@@ -87,6 +107,11 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   db-auth:
     image: postgres:15
@@ -107,6 +132,11 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   db-analytics:
     image: postgres:15
@@ -127,6 +157,11 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   db-users:
     image: postgres:15
@@ -147,6 +182,11 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   product-service:
     image: ${DOCKER_HUB_USER}/product-service:latest
@@ -171,6 +211,11 @@ services:
     restart: always
     networks:
       - ecommerce-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   order-service:
     image: ${DOCKER_HUB_USER}/order-service:latest
@@ -198,6 +243,11 @@ services:
     restart: always
     networks:
       - ecommerce-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   notification-service:
     image: ${DOCKER_HUB_USER}/notification-service:latest
@@ -225,6 +275,11 @@ services:
     restart: always
     networks:
       - ecommerce-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   auth-service:
     image: ${DOCKER_HUB_USER}/auth-service:latest
@@ -252,6 +307,11 @@ services:
     restart: always
     networks:
       - ecommerce-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   user-service:
     image: ${DOCKER_HUB_USER}/user-service:latest
@@ -276,6 +336,11 @@ services:
     restart: always
     networks:
       - ecommerce-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   minio:
     image: minio/minio:latest
@@ -296,6 +361,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   image-service:
     image: ${DOCKER_HUB_USER}/image-service:latest
@@ -319,6 +389,11 @@ services:
     restart: always
     networks:
       - ecommerce-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   analytics-service:
     image: ${DOCKER_HUB_USER}/analytics-service:latest
@@ -345,6 +420,11 @@ services:
     restart: always
     networks:
       - ecommerce-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   gateway-service:
     image: ${DOCKER_HUB_USER}/gateway-service:latest
@@ -377,6 +457,11 @@ services:
     restart: always
     networks:
       - ecommerce-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   payment-db:
     image: postgres:15
@@ -397,6 +482,11 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   payment-service:
     image: ${DOCKER_HUB_USER}/payment-service:latest
@@ -421,6 +511,11 @@ services:
     restart: always
     networks:
       - ecommerce-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   frontend:
     image: ${DOCKER_HUB_USER}/frontend:latest
@@ -435,6 +530,11 @@ services:
     restart: always
     networks:
       - ecommerce-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 networks:
   ecommerce-network:
