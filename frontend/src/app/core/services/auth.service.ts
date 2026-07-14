@@ -121,7 +121,12 @@ export class AuthService {
   }
 
   async loadUserBalance(): Promise<void> {
-    const walletUserId = this._user()?.walletUserId;
+    let walletUserId = this._user()?.walletUserId;
+    if (!walletUserId) {
+      const email = this._user()?.email;
+      if (email) await this.syncUserProfile(email);
+      walletUserId = this._user()?.walletUserId;
+    }
     if (!walletUserId) return;
     try {
       const res = await firstValueFrom(

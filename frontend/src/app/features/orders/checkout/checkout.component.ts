@@ -330,6 +330,7 @@ export class CheckoutComponent implements OnInit {
       }
 
       this.cart.clearCart();
+      await this.auth.loadUserBalance();
       this.router.navigate(['/orders'], { queryParams: { new: lastOrder?.id } });
     } catch (e: unknown) {
       if (e instanceof HttpErrorResponse) {
