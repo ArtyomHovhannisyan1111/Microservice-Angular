@@ -1,0 +1,30 @@
+<?xml version="1.1" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <!-- Удаляем дубликаты: оставляем только запись с минимальным id для каждого имени -->
+    <changeSet id="7a-delete-duplicate-products" author="admin">
+        <sql>
+            DELETE FROM products
+            WHERE id NOT IN (
+                SELECT MIN(id) FROM products GROUP BY LOWER(name)
+            );
+        </sql>
+    </changeSet>
+
+    <!-- Добавляем уникальный индекс по нижнему регистру имени -->
+    <changeSet id="7b-unique-product-name" author="admin">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="uq_products_name_lower"/>
+            </not>
+        </preConditions>
+        <sql>
+            CREATE UNIQUE INDEX uq_products_name_lower ON products (LOWER(name));
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>
