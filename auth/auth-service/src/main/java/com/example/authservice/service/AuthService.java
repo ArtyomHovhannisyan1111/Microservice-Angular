@@ -60,7 +60,7 @@ public class AuthService {
             tokenRepository.deleteByUsername(u.getUsername());
             String token = UUID.randomUUID().toString();
             tokenRepository .save(new PasswordResetToken(null, token, u.getUsername(), LocalDateTime.now().plusHours(24)));
-            email.sendPasswordResetEmail(u.getUsername(), conf.getFrontendUrl() + "/reset?token=" + token);
+            email.sendPasswordResetEmail(u.getUsername(), conf.getFrontendUrl() + "/auth/reset-password?token=" + token);
         });
         return ResponseEntity.ok("Email sent if exists");
     }
