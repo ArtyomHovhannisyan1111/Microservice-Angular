@@ -58,13 +58,6 @@ import { LangSwitcherComponent } from '../lang-switcher/lang-switcher.component'
                                uppercase tracking-wider">
                       {{ 'CATEGORIES.HEADER' | translate }}
                     </p>
-                    <button (click)="goToCategory('')"
-                            class="w-full text-left flex items-center gap-2.5 px-4 py-2 text-sm
-                                   text-gray-700 dark:text-gray-300
-                                   hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                      <span class="w-1.5 h-1.5 rounded-full bg-gray-400 shrink-0"></span>
-                      {{ 'CATEGORIES.ALL_PRODUCTS' | translate }}
-                    </button>
                     @for (cat of categoryItems; track cat.key) {
                       <button (click)="goToCategory(cat.value)"
                               class="w-full text-left flex items-center gap-2.5 px-4 py-2 text-sm
