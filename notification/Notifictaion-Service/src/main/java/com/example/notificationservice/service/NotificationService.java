@@ -26,6 +26,16 @@ public class NotificationService {
                 NotificationUtil.buildMessage(event.getTotalAmount())));
     }
 
+    @KafkaListener(topics = "order-cancel-topic", groupId = "notification-group", containerFactory = "notificationListenerContainerFactory")
+    public void consumeCancelOrder(ConfirmOrderRequest req) {
+        cancelOrder(req);
+    }
+
+    @KafkaListener(topics = "order-confirm-topic", groupId = "notification-group", containerFactory = "notificationListenerContainerFactory")
+    public void consumeConfirmOrder(ConfirmOrderRequest req) {
+        confirmOrder(req);
+    }
+
     public void cancelOrder(ConfirmOrderRequest req) {
         if (req.getUserEmail() != null && !req.getUserEmail().isBlank())
             emailService.sendOrderCancellationEmail(req.getUserEmail(), req.getOrderId(),

@@ -16,22 +16,28 @@ public class AnalyticsController {
     private final AnalyticsService analyticsService;
 
     @GetMapping("/summary")
-    public DashboardSummaryResponse getSummary() { return analyticsService.getSummary(); }
+    public DashboardSummaryResponse getSummary() {
+        return analyticsService.getSummary(); }
 
     @GetMapping("/revenue")
-    public List<MonthlyDataResponse> getMonthlyRevenue() { return analyticsService.getMonthlyRevenue(); }
+    public List<MonthlyDataResponse> getMonthlyRevenue() {
+        return analyticsService.getMonthlyRevenue(); }
 
     @GetMapping("/orders")
-    public List<MonthlyDataResponse> getMonthlyOrders() { return analyticsService.getMonthlyOrders(); }
+    public List<MonthlyDataResponse> getMonthlyOrders() {
+        return analyticsService.getMonthlyOrders(); }
 
     @GetMapping("/categories")
-    public List<CategorySalesResponse> getCategorySales() { return analyticsService.getCategorySales(); }
+    public List<CategorySalesResponse> getCategorySales() {
+        return analyticsService.getCategorySales(); }
 
     @GetMapping("/top-products")
-    public List<TopProductResponse> getTopProducts() { return analyticsService.getTopProducts(); }
+    public List<TopProductResponse> getTopProducts() {
+        return analyticsService.getTopProducts(); }
 
     @GetMapping("/statuses")
-    public List<OrderStatusResponse> getOrderStatuses() { return analyticsService.getOrderStatuses(); }
+    public List<OrderStatusResponse> getOrderStatuses() {
+        return analyticsService.getOrderStatuses(); }
 
     @GetMapping("/recent-orders")
     public List<RecentOrderResponse> getRecentOrders(@RequestParam(defaultValue = "10") int limit) {
@@ -39,5 +45,6 @@ public class AnalyticsController {
     }
 
     @GetMapping("/products/dashboard")
-    public DashboardResponse getDashboard() { return analyticsService.getDashboard(); }
+    public DashboardResponse getDashboard() {
+        return analyticsService.getDashboard(); }
 }

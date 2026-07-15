@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -39,7 +40,7 @@ public class OrderController {
     }
 
     @GetMapping("/my")
-    public List<Order> getMyOrders(@org.springframework.web.bind.annotation.RequestParam Integer userId) {
+    public List<Order> getMyOrders(@RequestParam Integer userId) {
         return orderService.getOrdersByUserId(userId);
     }
 

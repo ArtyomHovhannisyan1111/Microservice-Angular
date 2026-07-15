@@ -56,7 +56,7 @@ public class BalanceService {
         card.setAmount(card.getAmount().subtract(request.getAmount()));
         paymentMethodRepository.save(card);
 
-        return buildResponse(card, request.getAmount(), "Փոխանցումը հաջողվեց");
+        return buildResponse(card, request.getAmount(),"Transfer completed" );
     }
 
     private PaymentMethod findCard(Long id) {

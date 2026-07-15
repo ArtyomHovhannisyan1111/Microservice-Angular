@@ -295,7 +295,11 @@
     "PERIPHERALS": "Peripherals",
     "MONITORS": "Monitors",
     "AUDIO": "Audio",
-    "ACCESSORIES": "Accessories"
+    "ACCESSORIES": "Accessories",
+    "LAPTOPS": "Laptops",
+    "SMARTPHONES": "Smartphones",
+    "SMARTWATCHES": "Smart Watches",
+    "CAMERAS": "Cameras"
   },
   "PAYMENT": {
     "TITLE": "Payment methods",

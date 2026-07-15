@@ -2,7 +2,8 @@ package com.example.orderservice.service;
 
 import com.example.orderservice.Dto.*;
 import com.example.orderservice.Repository.OrderRepository;
-import com.example.orderservice.client.*;
+import com.example.orderservice.client.ProductFeignClient;
+import com.example.orderservice.client.UserServiceClient;
 import com.example.orderservice.exception.ResourceNotFoundException;
 import com.example.orderservice.mapper.OrderMapper;
 import com.example.orderservice.model.*;
@@ -26,10 +27,12 @@ public class OrderService {
     private static final String ORDER_TOPIC = "order-topic";
     private static final String ORDER_PLACED_TOPIC = "order-placed-topic";
 
+    private static final String ORDER_CANCEL_TOPIC = "order-cancel-topic";
+    private static final String ORDER_CONFIRM_TOPIC = "order-confirm-topic";
+
     private final OrderRepository orderRepository;
     private final ProductFeignClient productFeignClient;
     private final UserServiceClient userServiceClient;
-    private final NotificationFeignClient notificationFeignClient;
     private final RequestLogService requestLogService;
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
@@ -49,15 +52,13 @@ public class OrderService {
         } catch (FeignException.BadRequest e) {
             productFeignClient.increaseStock(request.getProductId(), new StockUpdateRequest(request.getQuantity()));
             if (request.getUserEmail() != null) {
-                try {
-                    notificationFeignClient.cancelOrder(NotificationConfirmRequest.builder()
-                            .orderId(0L)
-                            .userId(request.getUserId() != null ? request.getUserId().longValue() : 0L)
-                            .userEmail(request.getUserEmail())
-                            .totalPrice(total)
-                            .userName(request.getUserName())
-                            .build());
-                } catch (Exception ignored) {}
+                kafkaTemplate.send(ORDER_CANCEL_TOPIC, NotificationConfirmRequest.builder()
+                        .orderId(0L)
+                        .userId(request.getUserId() != null ? request.getUserId().longValue() : 0L)
+                        .userEmail(request.getUserEmail())
+                        .totalPrice(total)
+                        .userName(request.getUserName())
+                        .build());
             }
             throw new IllegalStateException("Недостаточно средств на балансе");
         }
@@ -106,7 +107,7 @@ public class OrderService {
     @Transactional
     public Order confirmOrder(Integer id, String userEmail, String userName) {
         Order order = findOrder(id);
-        notificationFeignClient.confirmOrder(NotificationConfirmRequest.builder()
+        kafkaTemplate.send(ORDER_CONFIRM_TOPIC, NotificationConfirmRequest.builder()
                 .orderId(order.getId().longValue())
                 .userId(order.getUserId() != null ? order.getUserId().longValue() : 0L)
                 .userEmail(userEmail)

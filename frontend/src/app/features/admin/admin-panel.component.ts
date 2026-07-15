@@ -381,11 +381,19 @@ export class AdminPanelComponent implements OnInit {
   private fb             = inject(FormBuilder);
 
   private static readonly CATEGORY_KEYS: Record<string, string> = {
-    'Электроника': 'CATEGORIES.ELECTRONICS',
-    'Периферия':   'CATEGORIES.PERIPHERALS',
-    'Мониторы':    'CATEGORIES.MONITORS',
-    'Аудио':       'CATEGORIES.AUDIO',
-    'Аксессуары':  'CATEGORIES.ACCESSORIES',
+    'Электроника':  'CATEGORIES.ELECTRONICS',
+    'Периферия':    'CATEGORIES.PERIPHERALS',
+    'Мониторы':     'CATEGORIES.MONITORS',
+    'Аудио':        'CATEGORIES.AUDIO',
+    'Аксессуары':   'CATEGORIES.ACCESSORIES',
+    'Ноутбуки':     'CATEGORIES.LAPTOPS',
+    'НОУТБУКИ':     'CATEGORIES.LAPTOPS',
+    'Смартфоны':    'CATEGORIES.SMARTPHONES',
+    'СМАРТФОНЫ':    'CATEGORIES.SMARTPHONES',
+    'Умные часы':   'CATEGORIES.SMARTWATCHES',
+    'УМНЫЕ ЧАСЫ':   'CATEGORIES.SMARTWATCHES',
+    'Фотоаппараты': 'CATEGORIES.CAMERAS',
+    'ФОТОАППАРАТЫ': 'CATEGORIES.CAMERAS',
   };
 
   readonly categories = signal<string[]>(['Электроника', 'Периферия', 'Мониторы', 'Аудио', 'Аксессуары']);

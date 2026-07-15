@@ -6,7 +6,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 
 @Data
-public class ConfirmOrderRequest {
+public class  ConfirmOrderRequest {
     @NotNull(message = "Order ID is required")
     private Long orderId;
 

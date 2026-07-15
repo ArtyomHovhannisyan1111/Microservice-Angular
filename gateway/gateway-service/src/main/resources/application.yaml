@@ -9,6 +9,9 @@ spring:
     gateway:
       server:
         webmvc:
+          http-client:
+            connect-timeout: PT3S
+            response-timeout: PT15S
           routes:
             - id: product-service
               uri: ${PRODUCT_SERVICE_URL:http://localhost:8080}

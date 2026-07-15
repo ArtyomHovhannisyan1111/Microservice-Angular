@@ -295,7 +295,11 @@
     "PERIPHERALS": "Ծայրամասային սարքեր",
     "MONITORS": "Մոնիտորներ",
     "AUDIO": "Աուդիո",
-    "ACCESSORIES": "Պարագաներ"
+    "ACCESSORIES": "Պարագաներ",
+    "LAPTOPS": "Նոութբուքներ",
+    "SMARTPHONES": "Սմարթֆոններ",
+    "SMARTWATCHES": "Խելացի ժամացույցներ",
+    "CAMERAS": "Ֆոտոխցիկներ"
   },
   "PAYMENT": {
     "TITLE": "Վճարման եղանակ",

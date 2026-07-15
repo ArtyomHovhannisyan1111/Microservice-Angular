@@ -295,7 +295,11 @@
     "PERIPHERALS": "Периферия",
     "MONITORS": "Мониторы",
     "AUDIO": "Аудио",
-    "ACCESSORIES": "Аксессуары"
+    "ACCESSORIES": "Аксессуары",
+    "LAPTOPS": "Ноутбуки",
+    "SMARTPHONES": "Смартфоны",
+    "SMARTWATCHES": "Умные часы",
+    "CAMERAS": "Фотоаппараты"
   },
   "PAYMENT": {
     "TITLE": "Способы оплаты",

@@ -87,7 +87,7 @@ public class ProductController {
         @RequestParam(required = false) Long categoryId,
         @RequestParam(required = false) String name,
         @RequestParam(required = false) String category,
-        @PageableDefault(size = 10, sort = "id") Pageable pageable) {
+        @PageableDefault(size = 2, sort = "id") Pageable pageable) {
         return ResponseEntity.ok(productService.getProducts(categoryId, name, category, pageable));
     }
 

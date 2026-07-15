@@ -1,5 +1,6 @@
 package com.example.notificationservice.config;
 
+import com.example.notificationservice.dto.ConfirmOrderRequest;
 import com.example.notificationservice.dto.OrderEvent;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
@@ -50,6 +51,26 @@ public class KafkaConsumerConfig {
                 new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory());
         factory.setAutoStartup(false);
+        return factory;
+    }
+
+    @Bean
+    public ConsumerFactory<String, ConfirmOrderRequest> notificationConsumerFactory() {
+        JsonDeserializer<ConfirmOrderRequest> deserializer = new JsonDeserializer<>(ConfirmOrderRequest.class);
+        deserializer.addTrustedPackages("*");
+        deserializer.setUseTypeHeaders(false);
+        Map<String, Object> props = new HashMap<>();
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, autoOffsetReset);
+        return new DefaultKafkaConsumerFactory<>(props, new StringDeserializer(), deserializer);
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, ConfirmOrderRequest> notificationListenerContainerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, ConfirmOrderRequest> factory =
+                new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(notificationConsumerFactory());
         return factory;
     }
 }

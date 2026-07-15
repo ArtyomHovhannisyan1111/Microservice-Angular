@@ -11,6 +11,6 @@ import java.util.List;
 @AllArgsConstructor
 public class OrderPlacedEvent {
 
-    private Long           orderId;
+    private Long orderId;
     private List<OrderItem> items;
 }

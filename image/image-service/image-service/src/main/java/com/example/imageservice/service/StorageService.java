@@ -17,39 +17,25 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class StorageService {
+
     private final S3Client s3Client;
     @Value("${minio.bucket-name}")
-    private  String bucketName;
+    private String bucketName;
     private final ImageMapper imageMapper;
-
 
     public ImageUploadResponse upload(MultipartFile file, String folder) {
         StorageExceptionUtil.validateFileNotEmpty(file);
         StorageExceptionUtil.validateImageFormat(file);
-
-        String originalName = file.getOriginalFilename() != null ? file.getOriginalFilename() : "file";
-        String safeOriginalName = originalName.replaceAll("[^a-zA-Z0-9._-]", "_");
-        String fileName = folder + "/" + UUID.randomUUID() + "_" + safeOriginalName;
-
-        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-                .bucket(bucketName)
-                .key(fileName)
-                .contentType(file.getContentType())
-                .build();
-
-        s3Client.putObject(putObjectRequest,
+        String safe = (file.getOriginalFilename() != null ? file.getOriginalFilename() : "file").replaceAll("[^a-zA-Z0-9._-]", "_");
+        String key = folder + "/" + UUID.randomUUID() + "_" + safe;
+        s3Client.putObject(
+                PutObjectRequest.builder().bucket(bucketName).key(key).contentType(file.getContentType()).build(),
                 RequestBody.fromInputStream(StorageExceptionUtil.getInputStream(file), file.getSize()));
-
-        return imageMapper.toUploadResponse(fileName, file);
+        return imageMapper.toUploadResponse(key, file);
     }
 
     public byte[] downloadImage(String fileName) {
-        GetObjectRequest getObjectRequest = GetObjectRequest.builder()
-                .bucket(bucketName)
-                .key(fileName)
-                .build();
-
-        return StorageExceptionUtil.executeAndReadBytes(() -> s3Client.getObject(getObjectRequest), fileName);
+        return StorageExceptionUtil.executeAndReadBytes(() -> s3Client.getObject(
+                GetObjectRequest.builder().bucket(bucketName).key(fileName).build()), fileName);
     }
 }
-

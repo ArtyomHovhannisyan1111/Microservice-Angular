@@ -369,6 +369,14 @@ export class NavbarComponent implements OnInit {
     'Мониторы':     'CATEGORIES.MONITORS',
     'Аудио':        'CATEGORIES.AUDIO',
     'Аксессуары':   'CATEGORIES.ACCESSORIES',
+    'Ноутбуки':     'CATEGORIES.LAPTOPS',
+    'НОУТБУКИ':     'CATEGORIES.LAPTOPS',
+    'Смартфоны':    'CATEGORIES.SMARTPHONES',
+    'СМАРТФОНЫ':    'CATEGORIES.SMARTPHONES',
+    'Умные часы':   'CATEGORIES.SMARTWATCHES',
+    'УМНЫЕ ЧАСЫ':   'CATEGORIES.SMARTWATCHES',
+    'Фотоаппараты': 'CATEGORIES.CAMERAS',
+    'ФОТОАППАРАТЫ': 'CATEGORIES.CAMERAS',
   };
 
   ngOnInit(): void {
