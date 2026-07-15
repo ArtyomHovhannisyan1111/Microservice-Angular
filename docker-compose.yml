@@ -354,6 +354,7 @@ services:
       MINIO_ROOT_PASSWORD: CHANGEME123
     volumes:
       - minio-data:/data
+    restart: always
     networks:
       - ecommerce-network
     healthcheck:
