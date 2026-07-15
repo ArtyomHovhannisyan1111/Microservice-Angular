@@ -14,12 +14,12 @@ spring:
             response-timeout: PT15S
           routes:
             - id: product-service
-              uri: ${PRODUCT_SERVICE_URL:http://localhost:8080}
+              uri: ${PRODUCT_SERVICE_URL:http://localhost:8095}
               predicates:
                 - Path=/api/products/**
 
             - id: order-service
-              uri: ${ORDER_SERVICE_URL:http://localhost:8086}
+              uri: ${ORDER_SERVICE_URL:http://localhost:8097}
               predicates:
                 - Path=/api/orders/**
 
@@ -67,8 +67,3 @@ spring:
 jwt:
   secret: ${JWT_SECRET:A9gX7mP2qK5zW1vB8nR4tY0eU3iO6pL9sJ2dH5fG8hK1lM4nJ3bV6cC9vX0zZ1qA}
 
-logging:
-  level:
-    org.springframework.security: DEBUG
-    org.springframework.cloud.gateway: TRACE
-    org.springframework.web.servlet: DEBUG

@@ -2,27 +2,19 @@ name: CI
 on: [push, pull_request]
 
 jobs:
-  detect:
-    runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.m.outputs.value }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
-        id: f
-        with:
-          filters: |
-            backend: ['**/pom.xml']
-            frontend: ['frontend/**']
-      - id: m
-        run: |
-          echo 'value={"include":[{"name":"all-services","path":"."}]}' >> $GITHUB_OUTPUT
-
   build-backend:
-    needs: detect
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - { name: product,      path: product/ProductService }
+          - { name: order,        path: order/Order-Service }
+          - { name: notification, path: notification/Notifictaion-Service }
+          - { name: auth,         path: auth/auth-service }
+          - { name: gateway,      path: gateway/gateway-service }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with: { java-version: '17', distribution: temurin, cache: maven }
-      - run: mvn package -DskipTests --no-transfer-progress
+      - name: Build ${{ matrix.service.name }}
+        run: mvn package -DskipTests --no-transfer-progress -f ${{ matrix.service.path }}/pom.xml

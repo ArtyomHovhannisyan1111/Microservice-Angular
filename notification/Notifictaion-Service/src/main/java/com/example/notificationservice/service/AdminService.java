@@ -18,7 +18,7 @@ public class AdminService {
     private final NotificationRepository notificationRepository;
     private final RestClient restClient;
 
-    @Value("${ORDER_SERVICE_URL}")
+    @Value("${ORDER_SERVICE_URL:http://localhost:8097}")
     private String orderServiceUrl;
 
     public List<OrderResponse> getAllOrders() {

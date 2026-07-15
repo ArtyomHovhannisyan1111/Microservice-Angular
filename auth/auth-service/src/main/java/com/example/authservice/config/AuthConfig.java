@@ -1,4 +1,5 @@
 package com.example.authservice.config;
+
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -12,35 +13,32 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.client.RestTemplate;
 
 @Getter
-    @Configuration
-    @EnableWebSecurity
-    public class AuthConfig {
+@Configuration
+@EnableWebSecurity
+public class AuthConfig {
 
-        @Value("${app.frontend-url}")
-        private String frontendUrl;
+    @Value("${app.frontend-url:http://localhost:4200}")
+    private String frontendUrl;
 
-        @Value("${USER_SERVICE_URL}")
-        private String userServiceUrl;
+    @Value("${USER_SERVICE_URL:http://localhost:8088}")
+    private String userServiceUrl;
 
-        @Bean
-        public PasswordEncoder passwordEncoder() {
-            return new BCryptPasswordEncoder();
-        }
-
-        @Bean
-        public RestTemplate restTemplate() {
-            return new RestTemplate();
-        }
-
-        @Bean
-        public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-            http
-                    .cors(AbstractHttpConfigurer::disable)
-                    .csrf(AbstractHttpConfigurer::disable)
-                    .authorizeHttpRequests(auth -> auth
-                            .requestMatchers("/api/auth/**").permitAll()
-                            .anyRequest().authenticated()
-                    );
-            return http.build();
-        }
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
+
+    @Bean
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
+    }
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .cors(AbstractHttpConfigurer::disable)
+                .csrf(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+        return http.build();
+    }
+}
