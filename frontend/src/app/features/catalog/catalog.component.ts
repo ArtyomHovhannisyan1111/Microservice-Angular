@@ -37,17 +37,6 @@ import { ProductCardComponent } from './product-card/product-card.component';
             <input [(ngModel)]="searchQuery" (ngModelChange)="onSearchChange()"
                    type="text" [placeholder]="'COMMON.SEARCH' | translate" class="input-field pl-10 w-56">
           </div>
-          <!-- Category dropdown -->
-          @if (categoryItems.length > 0) {
-            <select [ngModel]="selectedCategory()"
-                    (ngModelChange)="selectCategory($event)"
-                    class="input-field pr-8 min-w-[140px]">
-              <option value="">{{ 'CATEGORIES.ALL_PRODUCTS' | translate }}</option>
-              @for (cat of categoryItems; track cat.value) {
-                <option [value]="cat.value">{{ cat.key | translate }}</option>
-              }
-            </select>
-          }
           <!-- Admin: add product button -->
           @if (auth.isAdmin()) {
             <a routerLink="/admin"
@@ -210,36 +199,13 @@ export class CatalogComponent implements OnInit {
     return result;
   });
 
-  private static readonly CATEGORY_KEYS: Record<string, string> = {
-    'Электроника': 'CATEGORIES.ELECTRONICS',
-    'Периферия':   'CATEGORIES.PERIPHERALS',
-    'Мониторы':    'CATEGORIES.MONITORS',
-    'Аудио':       'CATEGORIES.AUDIO',
-    'Аксессуары':  'CATEGORIES.ACCESSORIES',
-    'ELECTRONICS': 'CATEGORIES.ELECTRONICS',
-    'PERIPHERALS': 'CATEGORIES.PERIPHERALS',
-    'MONITORS':    'CATEGORIES.MONITORS',
-    'AUDIO':       'CATEGORIES.AUDIO',
-    'ACCESSORIES': 'CATEGORIES.ACCESSORIES',
-  };
-
   readonly skeletons = Array(10).fill(0);
   private allProducts: Product[] = [];
   searchQuery = '';
-  categories: string[] = [];
-  categoryItems: { key: string; value: string }[] = [];
 
   private searchTimeout: any;
 
   ngOnInit(): void {
-    this.productService.getCategories().subscribe(cats => {
-      this.categories = cats;
-      this.categoryItems = cats.map(cat => ({
-        key:   CatalogComponent.CATEGORY_KEYS[cat] ?? `CATEGORIES.${cat.toUpperCase()}`,
-        value: cat,
-      }));
-    });
-
     this.route.queryParamMap.pipe(
       takeUntilDestroyed(this.destroyRef)
     ).subscribe(params => {

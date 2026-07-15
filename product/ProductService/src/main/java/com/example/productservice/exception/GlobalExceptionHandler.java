@@ -47,6 +47,11 @@ public class GlobalExceptionHandler {
         return buildError(HttpStatus.BAD_REQUEST, message, request);
     }
 
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiError> handleUnexpected(Exception ex, HttpServletRequest request) {
+        return buildError(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error: " + ex.getMessage(), request);
+    }
+
     private ResponseEntity<ApiError> buildError(HttpStatus status, String message, HttpServletRequest request) {
         ApiError error = new ApiError(
                 Instant.now(),

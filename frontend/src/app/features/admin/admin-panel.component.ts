@@ -2,7 +2,7 @@ import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { OrderService } from '../../core/services/order.service';
 import { ProductService } from '../../core/services/product.service';
 import { ImageService } from '../../core/services/image.service';
@@ -144,7 +144,7 @@ type Tab = 'orders' | 'products';
               <select formControlName="category" class="input-field">
                 <option value="" disabled>{{ 'ADMIN.SELECT_CATEGORY' | translate }}</option>
                 @for (cat of categories(); track cat) {
-                  <option [value]="cat">{{ catKey(cat) | translate }}</option>
+                  <option [value]="cat">{{ catLabel(cat) }}</option>
                 }
               </select>
             </div>
@@ -236,7 +236,7 @@ type Tab = 'orders' | 'products';
               <select formControlName="category" class="input-field">
                 <option value="" disabled>{{ 'ADMIN.SELECT_CATEGORY' | translate }}</option>
                 @for (cat of categories(); track cat) {
-                  <option [value]="cat">{{ catKey(cat) | translate }}</option>
+                  <option [value]="cat">{{ catLabel(cat) }}</option>
                 }
               </select>
             </div>
@@ -335,7 +335,7 @@ type Tab = 'orders' | 'products';
                           <span class="font-medium text-gray-900 dark:text-white">{{ product.name }}</span>
                         </div>
                       </td>
-                      <td class="px-4 py-3 text-gray-500 dark:text-gray-400">{{ product.category }}</td>
+                      <td class="px-4 py-3 text-gray-500 dark:text-gray-400">{{ catLabel(product.category) }}</td>
                       <td class="px-4 py-3 text-right font-semibold text-gray-900 dark:text-white">
                         {{ product.price | number:'1.0-0' }} ₽
                       </td>
@@ -377,6 +377,7 @@ export class AdminPanelComponent implements OnInit {
   private orderService   = inject(OrderService);
   private productService = inject(ProductService);
   private imageService   = inject(ImageService);
+  private translate      = inject(TranslateService);
   private fb             = inject(FormBuilder);
 
   private static readonly CATEGORY_KEYS: Record<string, string> = {
@@ -389,8 +390,12 @@ export class AdminPanelComponent implements OnInit {
 
   readonly categories = signal<string[]>(['Электроника', 'Периферия', 'Мониторы', 'Аудио', 'Аксессуары']);
 
-  catKey(cat: string): string {
-    return AdminPanelComponent.CATEGORY_KEYS[cat] ?? cat;
+  catLabel(cat: string): string {
+    const key = cat.startsWith('CATEGORIES.')
+      ? cat
+      : (AdminPanelComponent.CATEGORY_KEYS[cat] ?? `CATEGORIES.${cat.toUpperCase()}`);
+    const translated = this.translate.instant(key);
+    return translated === key ? key.replace(/^CATEGORIES\./, '') : translated;
   }
 
   readonly activeTab       = signal<Tab>('orders');
@@ -423,7 +428,7 @@ export class AdminPanelComponent implements OnInit {
     description: ['', Validators.required],
     category:    ['', Validators.required],
     price:       [0,  [Validators.required, Validators.min(1)]],
-    stock:       [0,  [Validators.required, Validators.min(0)]],
+    stock:       [0,  [Validators.required, Validators.min(1)]],
     rating:      [4.0],
     imageUrl:    ['']
   });
@@ -433,7 +438,7 @@ export class AdminPanelComponent implements OnInit {
     description: ['', Validators.required],
     category:    ['', Validators.required],
     price:       [0,  [Validators.required, Validators.min(1)]],
-    stock:       [0,  [Validators.required, Validators.min(0)]],
+    stock:       [0,  [Validators.required, Validators.min(1)]],
     rating:      [4.0],
     imageUrl:    ['']
   });
@@ -481,25 +486,28 @@ export class AdminPanelComponent implements OnInit {
   async addProduct(): Promise<void> {
     if (this.productForm.invalid) { this.productForm.markAllAsTouched(); return; }
     this.addingProduct.set(true);
-    const raw = this.productForm.getRawValue();
-    const product = await firstValueFrom(
-      this.productService.createProduct({
-        name:        raw.name!,
-        description: raw.description!,
-        category:    raw.category!,
-        price:       Number(raw.price),
-        stock:       Number(raw.stock),
-        rating:      raw.rating ?? 4.0,
-        imageUrl:    raw.imageUrl || undefined,
-        image:       raw.imageUrl || undefined
-      })
-    );
-    this.products.update(list => [product, ...list]);
-    this.productForm.reset({ rating: 4.0, price: 0, stock: 0, category: '' });
-    this.addingProduct.set(false);
-    this.addSuccess.set(true);
-    setTimeout(() => this.addSuccess.set(false), 3000);
-    this.updateStats(this.orders(), this.products().length);
+    try {
+      const raw = this.productForm.getRawValue();
+      const product = await firstValueFrom(
+        this.productService.createProduct({
+          name:        raw.name!,
+          description: raw.description!,
+          category:    raw.category!,
+          price:       Number(raw.price),
+          stock:       Number(raw.stock),
+          rating:      raw.rating ?? 4.0,
+          imageUrl:    raw.imageUrl || undefined,
+          image:       raw.imageUrl || undefined
+        })
+      );
+      this.products.update(list => [product, ...list]);
+      this.productForm.reset({ rating: 4.0, price: 0, stock: 0, category: '' });
+      this.addSuccess.set(true);
+      setTimeout(() => this.addSuccess.set(false), 3000);
+      this.updateStats(this.orders(), this.products().length);
+    } finally {
+      this.addingProduct.set(false);
+    }
   }
 
   async onDeleteProduct(productId: string): Promise<void> {
@@ -541,23 +549,26 @@ export class AdminPanelComponent implements OnInit {
     const product = this.editingProduct();
     if (!product) return;
     this.savingEdit.set(true);
-    const raw = this.editForm.getRawValue();
-    const updated = await firstValueFrom(
-      this.productService.updateProduct(product.id, {
-        name:        raw.name!,
-        description: raw.description!,
-        category:    raw.category!,
-        price:       Number(raw.price),
-        stock:       Number(raw.stock),
-        rating:      raw.rating ?? 4.0,
-        imageUrl:    raw.imageUrl || undefined,
-        image:       raw.imageUrl || undefined
-      })
-    );
-    this.products.update(list => list.map(p => p.id === updated.id ? updated : p));
-    this.savingEdit.set(false);
-    this.editSuccess.set(true);
-    setTimeout(() => { this.editSuccess.set(false); this.cancelEdit(); }, 1500);
+    try {
+      const raw = this.editForm.getRawValue();
+      const updated = await firstValueFrom(
+        this.productService.updateProduct(product.id, {
+          name:        raw.name!,
+          description: raw.description!,
+          category:    raw.category!,
+          price:       Number(raw.price),
+          stock:       Number(raw.stock),
+          rating:      raw.rating ?? 4.0,
+          imageUrl:    raw.imageUrl || undefined,
+          image:       raw.imageUrl || undefined
+        })
+      );
+      this.products.update(list => list.map(p => p.id === updated.id ? updated : p));
+      this.editSuccess.set(true);
+      setTimeout(() => { this.editSuccess.set(false); this.cancelEdit(); }, 1500);
+    } finally {
+      this.savingEdit.set(false);
+    }
   }
 
   onEditImageFileChange(event: Event): void {
