@@ -1,6 +1,8 @@
 spring:
   application:
     name: auth-service
+    security:
+        ignored: /**
 
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5435/auth_db}
