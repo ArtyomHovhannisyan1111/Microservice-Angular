@@ -7,6 +7,7 @@ services:
     container_name: zookeeper
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
+    restart: always
     networks:
       - ecommerce-network
     logging:
@@ -30,6 +31,7 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+    restart: always
     networks:
       - ecommerce-network
     logging:
