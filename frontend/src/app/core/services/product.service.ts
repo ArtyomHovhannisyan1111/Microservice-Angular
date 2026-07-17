@@ -62,8 +62,8 @@ export class ProductService {
       retry({ count: 2, delay: 1000 }),
       map(res => ({
         items: (res.content as any[]).map(p => this.normalize(p)),
-        totalPages: res.totalPages,
-        totalElements: res.totalElements
+        totalPages: res.page?.totalPages ?? res.totalPages ?? 1,
+        totalElements: res.page?.totalElements ?? res.totalElements ?? 0
       })),
       catchError(err => throwError(() => err))
     );
