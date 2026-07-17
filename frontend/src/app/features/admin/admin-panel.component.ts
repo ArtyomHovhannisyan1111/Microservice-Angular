@@ -545,6 +545,7 @@ export class AdminPanelComponent implements OnInit {
       imageUrl:    product.imageUrl ?? ''
     });
     this.editImgError = false;
+    setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 0);
   }
 
   cancelEdit(): void {
