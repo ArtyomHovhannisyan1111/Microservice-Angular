@@ -72,8 +72,24 @@ import { ProductCardComponent } from './product-card/product-card.component';
         </div>
       }
 
+      <!-- Error state -->
+      @if (!loading() && error()) {
+        <div class="text-center py-20 card">
+          <svg class="w-16 h-16 text-red-300 dark:text-red-700 mx-auto mb-4"
+               fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                  d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+          </svg>
+          <p class="text-gray-600 dark:text-gray-300 font-medium mb-4">{{ error()! | translate }}</p>
+          <button (click)="loadProducts(currentPage())"
+                  class="px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg transition-colors">
+            {{ 'COMMON.RETRY' | translate }}
+          </button>
+        </div>
+      }
+
       <!-- Products grid -->
-      @if (!loading()) {
+      @if (!loading() && !error()) {
         @if (filteredProducts().length > 0) {
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             @for (product of filteredProducts(); track product.id) {
@@ -100,7 +116,7 @@ import { ProductCardComponent } from './product-card/product-card.component';
       }
 
       <!-- Pagination -->
-      @if (!loading() && totalPages() > 1) {
+      @if (!loading() && !error() && totalPages() > 1) {
         <div class="flex items-center justify-center gap-1 mt-10">
           <button (click)="goToPage(currentPage() - 1)"
                   [disabled]="currentPage() === 0"
@@ -174,6 +190,7 @@ export class CatalogComponent implements OnInit {
   readonly auth           = inject(AuthService);
 
   readonly loading          = signal(true);
+  readonly error            = signal<string | null>(null);
   readonly filteredProducts = signal<Product[]>([]);
   readonly selectedCategory = signal('');
   readonly toastVisible     = signal(false);
@@ -215,15 +232,21 @@ export class CatalogComponent implements OnInit {
     });
   }
 
-  private async loadProducts(page = 0): Promise<void> {
+  async loadProducts(page = 0): Promise<void> {
     this.loading.set(true);
-    const res = await firstValueFrom(this.productService.getProductsPaged(page, 10, this.searchQuery, this.selectedCategory()));
-    this.allProducts = res.items;
-    this.currentPage.set(page);
-    this.totalPages.set(res.totalPages);
-    this.totalElements.set(res.totalElements);
-    this.filteredProducts.set(res.items);
-    this.loading.set(false);
+    this.error.set(null);
+    try {
+      const res = await firstValueFrom(this.productService.getProductsPaged(page, 10, this.searchQuery, this.selectedCategory()));
+      this.allProducts = res.items;
+      this.currentPage.set(page);
+      this.totalPages.set(res.totalPages);
+      this.totalElements.set(res.totalElements);
+      this.filteredProducts.set(res.items);
+    } catch {
+      this.error.set('CATALOG.LOAD_ERROR');
+    } finally {
+      this.loading.set(false);
+    }
   }
 
   onSearchChange(): void {

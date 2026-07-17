@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, catchError, map, of } from 'rxjs';
+import { Observable, catchError, map, of, retry, throwError } from 'rxjs';
 import { Product } from '../models/product.model';
 import { API_BASE_URL } from '../tokens/api.token';
 
@@ -59,16 +59,13 @@ export class ProductService {
     if (search.trim())   params['name']     = search.trim();
     if (category.trim()) params['category'] = category.trim();
     return this.http.get<any>(`${this.baseUrl}/api/products/page`, { params }).pipe(
+      retry({ count: 2, delay: 1000 }),
       map(res => ({
         items: (res.content as any[]).map(p => this.normalize(p)),
         totalPages: res.totalPages,
         totalElements: res.totalElements
       })),
-      catchError(() => of({
-        items: [] as Product[],
-        totalPages: 0,
-        totalElements: 0
-      }))
+      catchError(err => throwError(() => err))
     );
   }
 

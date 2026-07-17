@@ -83,7 +83,8 @@
     "NOT_FOUND": "No products found",
     "RESET_FILTERS": "Reset filters",
     "ADDED_TO_CART": "added to cart",
-    "PRODUCT_DELETED": "Product deleted"
+    "PRODUCT_DELETED": "Product deleted",
+    "LOAD_ERROR": "Failed to load products. Check your connection and try again."
   },
   "PRODUCT": {
     "OUT_OF_STOCK": "Out of stock",
