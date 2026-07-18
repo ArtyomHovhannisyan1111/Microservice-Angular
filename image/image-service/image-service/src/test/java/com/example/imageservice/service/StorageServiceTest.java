@@ -111,7 +111,7 @@ class StorageServiceTest {
             byte[] content = "image-content".getBytes();
 
             given(s3Client.getObject(any(GetObjectRequest.class)))
-                    .willReturn(software.amazon.awssdk.core.ResponseInputStream.create(
+                    .willReturn(new software.amazon.awssdk.core.ResponseInputStream<>(
                             software.amazon.awssdk.services.s3.model.GetObjectResponse.builder().build(),
                             new ByteArrayInputStream(content)));
 
