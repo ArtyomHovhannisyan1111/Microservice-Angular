@@ -37,7 +37,7 @@ class BalanceServiceTest {
         card = PaymentMethod.builder()
                 .id(10L).userId(42L).maskedNumber("**** 1234")
                 .providerName("Visa").type("CARD").accountToken("tok")
-                .cardholderName("Ivan").cvv("123").active(true).build();
+                .cardholderName("Ivan").isActive(true).build();
 
         request = new TopUpRequest();
         request.setPaymentMethodId(10L);

@@ -33,7 +33,7 @@ class PaymentMethodControllerTest {
     private PaymentMethodRequest validRequest() {
         return PaymentMethodRequest.builder()
                 .userId(1L).type("CARD").providerName("Visa")
-                .rawNumber("4111111111111111").cardholderName("Ivan").cvv("123")
+                .rawNumber("4111111111111111").cardholderName("Ivan")
                 .build();
     }
 
