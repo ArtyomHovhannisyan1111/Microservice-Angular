@@ -44,6 +44,11 @@ services:
     image: postgres:15
     container_name: postgres_db
     restart: always
+    command: >
+      postgres
+      -c shared_buffers=32MB
+      -c work_mem=4MB
+      -c max_connections=20
     environment:
       POSTGRES_DB: microservice_db
       POSTGRES_USER: postgres
@@ -69,6 +74,11 @@ services:
     image: postgres:15
     container_name: postgres_orders_db
     restart: always
+    command: >
+      postgres
+      -c shared_buffers=32MB
+      -c work_mem=4MB
+      -c max_connections=20
     environment:
       POSTGRES_DB: orders_db
       POSTGRES_USER: postgres
@@ -94,6 +104,11 @@ services:
     image: postgres:15
     container_name: postgres_notifications_db
     restart: always
+    command: >
+      postgres
+      -c shared_buffers=32MB
+      -c work_mem=4MB
+      -c max_connections=20
     environment:
       POSTGRES_DB: notifications_db
       POSTGRES_USER: postgres
@@ -119,6 +134,11 @@ services:
     image: postgres:15
     container_name: postgres_auth_db
     restart: always
+    command: >
+      postgres
+      -c shared_buffers=32MB
+      -c work_mem=4MB
+      -c max_connections=20
     environment:
       POSTGRES_DB: auth_db
       POSTGRES_USER: postgres
@@ -144,6 +164,11 @@ services:
     image: postgres:15
     container_name: postgres_analytics_db
     restart: always
+    command: >
+      postgres
+      -c shared_buffers=32MB
+      -c work_mem=4MB
+      -c max_connections=20
     environment:
       POSTGRES_DB: analytics_db
       POSTGRES_USER: postgres
@@ -169,6 +194,11 @@ services:
     image: postgres:15
     container_name: postgres_users_db
     restart: always
+    command: >
+      postgres
+      -c shared_buffers=32MB
+      -c work_mem=4MB
+      -c max_connections=20
     environment:
       POSTGRES_DB: users_db
       POSTGRES_USER: postgres
@@ -484,6 +514,11 @@ services:
     image: postgres:15
     container_name: postgres_payment_db
     restart: always
+    command: >
+      postgres
+      -c shared_buffers=32MB
+      -c work_mem=4MB
+      -c max_connections=20
     environment:
       POSTGRES_DB: payment_db
       POSTGRES_USER: postgres
