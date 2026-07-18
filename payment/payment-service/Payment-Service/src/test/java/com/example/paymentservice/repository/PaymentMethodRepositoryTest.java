@@ -25,15 +25,15 @@ class PaymentMethodRepositoryTest {
         em.persistAndFlush(PaymentMethod.builder()
                 .userId(1L).type("CARD").providerName("Visa")
                 .accountToken("tok1").maskedNumber("**** 1111")
-                .cardholderName("Ivan").cvv("123").isActive(true).build());
+                .cardholderName("Ivan").isActive(true).build());
         em.persistAndFlush(PaymentMethod.builder()
                 .userId(1L).type("CARD").providerName("MasterCard")
                 .accountToken("tok2").maskedNumber("**** 2222")
-                .cardholderName("Ivan").cvv("321").isActive(false).build());
+                .cardholderName("Ivan").isActive(false).build());
         em.persistAndFlush(PaymentMethod.builder()
                 .userId(2L).type("CARD").providerName("Mir")
                 .accountToken("tok3").maskedNumber("**** 3333")
-                .cardholderName("Maria").cvv("456").isActive(true).build());
+                .cardholderName("Maria").isActive(true).build());
         em.clear();
     }
 
