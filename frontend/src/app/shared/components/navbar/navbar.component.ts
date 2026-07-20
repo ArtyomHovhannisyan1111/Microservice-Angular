@@ -104,19 +104,6 @@ import { LangSwitcherComponent } from '../lang-switcher/lang-switcher.component'
                   {{ 'NAV.ADMIN_PRODUCTS' | translate }}
                 </a>
 
-                <a routerLink="/admin/images"
-                   routerLinkActive="bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300"
-                   class="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium
-                          text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/30
-                          transition-colors duration-200">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <rect x="3" y="3" width="18" height="18" rx="2" stroke-width="2" stroke-linecap="round"/>
-                    <circle cx="8.5" cy="8.5" r="1.5" stroke-width="2"/>
-                    <polyline points="21 15 16 10 5 21" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                  {{ 'NAV.IMAGES' | translate }}
-                </a>
-
                 <a routerLink="/admin/analytics"
                    routerLinkActive="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300"
                    class="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium
@@ -326,11 +313,6 @@ import { LangSwitcherComponent } from '../lang-switcher/lang-switcher.component'
                [routerLinkActiveOptions]="{ exact: true }"
                class="text-sm font-medium text-amber-600 dark:text-amber-400 shrink-0">
               {{ 'NAV.ADMIN_PRODUCTS' | translate }}
-            </a>
-            <a routerLink="/admin/images"
-               routerLinkActive="text-violet-600 dark:text-violet-400"
-               class="text-sm font-medium text-violet-600 dark:text-violet-400 shrink-0">
-              {{ 'NAV.IMAGES' | translate }}
             </a>
             <a routerLink="/admin/analytics"
                routerLinkActive="text-indigo-600 dark:text-indigo-400"
