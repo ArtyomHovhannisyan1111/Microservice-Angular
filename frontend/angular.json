@@ -42,6 +42,9 @@
         },
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "proxyConfig": "proxy.conf.js"
+          },
           "configurations": {
             "production": { "buildTarget": "ecommerce-frontend:build:production" },
             "development": { "buildTarget": "ecommerce-frontend:build:development" }
