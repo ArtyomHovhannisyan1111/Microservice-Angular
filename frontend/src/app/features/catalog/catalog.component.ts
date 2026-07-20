@@ -224,6 +224,7 @@ export class CatalogComponent implements OnInit {
   searchQuery = '';
 
   private searchTimeout: any;
+  private loadRequestId = 0;
 
   ngOnInit(): void {
     this.route.queryParamMap.pipe(
@@ -236,23 +237,28 @@ export class CatalogComponent implements OnInit {
   }
 
   async loadProducts(page = 0): Promise<void> {
+    const requestId = ++this.loadRequestId;
     this.loading.set(true);
     this.error.set(null);
     try {
       const res = await firstValueFrom(this.productService.getProductsPaged(page, 10, this.searchQuery, this.selectedCategory()));
+      if (requestId !== this.loadRequestId) return;
       this.allProducts = res.items;
       this.currentPage.set(page);
       this.totalPages.set(res.totalPages);
       this.totalElements.set(res.totalElements);
       this.filteredProducts.set(res.items);
     } catch {
+      if (requestId !== this.loadRequestId) return;
       if (this.allProducts.length === 0) {
         this.error.set('CATALOG.LOAD_ERROR');
       } else {
         this.showToast(this.translateService.instant('CATALOG.REFRESH_FAILED'));
       }
     } finally {
-      this.loading.set(false);
+      if (requestId === this.loadRequestId) {
+        this.loading.set(false);
+      }
     }
   }
 
