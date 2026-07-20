@@ -21,7 +21,7 @@ public class OrderTask {
     private final OrderRepository orderRepository;
     private final NotificationFeignClient notificationFeignClient;
 
-    @Scheduled(fixedRate =300000)
+    @Scheduled(fixedRate = 300000)
     public void checkPendingOrders() {
         List<Order> pendingOrders = orderRepository.findByStatus(OrderStatus.PENDING);
 
@@ -29,9 +29,19 @@ public class OrderTask {
             return;
         }
 
+        log.info("Scheduler: found {} pending order(s) to confirm", pendingOrders.size());
 
         for (Order order : pendingOrders) {
             try {
+                // 1. Сначала меняем статус и сохраняем в БД.
+                //    Если save упадёт — письмо не отправится, заказ останется PENDING
+                //    и будет повторно обработан на следующем запуске (без дублей email).
+                order.setStatus(OrderStatus.CONFIRMED);
+                orderRepository.save(order);
+
+                // 2. Только после успешного сохранения отправляем уведомление.
+                //    Если email упадёт — заказ уже CONFIRMED и больше не попадёт
+                //    в findByStatus(PENDING), дублей не будет.
                 notificationFeignClient.confirmOrder(
                         NotificationConfirmRequest.builder()
                                 .orderId(order.getId().longValue())
@@ -42,9 +52,10 @@ public class OrderTask {
                                 .build()
                 );
 
-                order.setStatus(OrderStatus.CONFIRMED);
-                orderRepository.save(order);
+                log.info("Scheduler: order {} confirmed and notification sent", order.getId());
+
             } catch (Exception e) {
+                log.error("Scheduler: failed to process order {}: {}", order.getId(), e.getMessage(), e);
             }
         }
     }
