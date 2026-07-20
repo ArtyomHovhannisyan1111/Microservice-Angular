@@ -10,4 +10,7 @@ public interface NotificationFeignClient {
 
     @PostMapping("/api/notifications/confirm-order")
     void confirmOrder(@RequestBody NotificationConfirmRequest request);
+
+    @PostMapping("/api/notifications/cancel-order")
+    void cancelOrder(@RequestBody NotificationConfirmRequest request);
 }

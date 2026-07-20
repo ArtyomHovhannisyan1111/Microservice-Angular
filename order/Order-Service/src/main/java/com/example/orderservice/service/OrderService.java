@@ -2,6 +2,7 @@ package com.example.orderservice.service;
 
 import com.example.orderservice.Dto.*;
 import com.example.orderservice.Repository.OrderRepository;
+import com.example.orderservice.client.NotificationFeignClient;
 import com.example.orderservice.client.ProductFeignClient;
 import com.example.orderservice.client.UserServiceClient;
 import com.example.orderservice.exception.ResourceNotFoundException;
@@ -33,6 +34,7 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final ProductFeignClient productFeignClient;
     private final UserServiceClient userServiceClient;
+    private final NotificationFeignClient notificationFeignClient;
     private final RequestLogService requestLogService;
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
@@ -73,16 +75,44 @@ public class OrderService {
         return order;
     }
 
-    @Transactional
     public Order cancelOrder(Integer id) {
         Order order = findOrder(id);
         OrderValidationUtil.validateCancelable(order);
 
-        userServiceClient.topUpBalance(order.getUserId(), Map.of("amount", order.getTotalPrice()));
-        productFeignClient.increaseStock(order.getProductId(), new StockUpdateRequest(order.getQuantity()));
-
+        // 1. Сначала сохраняем CANCELLED — предотвращает повторную отмену
+        //    и двойной возврат баланса/стока при следующем вызове.
         order.setStatus(OrderStatus.CANCELLED);
-        return orderRepository.save(order);
+        Order saved = orderRepository.save(order);
+
+        // 2. Возвращаем баланс и сток. Заказ уже CANCELLED, поэтому
+        //    повторный вызов cancelOrder упадёт на validateCancelable.
+        try {
+            userServiceClient.topUpBalance(saved.getUserId(), Map.of("amount", saved.getTotalPrice()));
+        } catch (Exception e) {
+            log.error("Failed to refund balance for order {}: {}", saved.getId(), e.getMessage(), e);
+        }
+        try {
+            productFeignClient.increaseStock(saved.getProductId(), new StockUpdateRequest(saved.getQuantity()));
+        } catch (Exception e) {
+            log.error("Failed to return stock for order {}: {}", saved.getId(), e.getMessage(), e);
+        }
+
+        // 3. Отправляем уведомление об отмене.
+        try {
+            notificationFeignClient.cancelOrder(
+                    NotificationConfirmRequest.builder()
+                            .orderId(saved.getId().longValue())
+                            .userId(saved.getUserId() != null ? saved.getUserId().longValue() : 0L)
+                            .userEmail(saved.getUserEmail() != null ? saved.getUserEmail() : "")
+                            .userName(saved.getUserName() != null ? saved.getUserName() : "Покупатель")
+                            .totalPrice(saved.getTotalPrice() != null ? saved.getTotalPrice() : BigDecimal.ZERO)
+                            .build()
+            );
+        } catch (Exception e) {
+            log.error("Failed to send cancellation notification for order {}: {}", saved.getId(), e.getMessage(), e);
+        }
+
+        return saved;
     }
 
     public List<Order> getAllOrders() {
