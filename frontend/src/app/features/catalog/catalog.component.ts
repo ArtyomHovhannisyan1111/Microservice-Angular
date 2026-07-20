@@ -51,9 +51,10 @@ import { ProductCardComponent } from './product-card/product-card.component';
           }
         </div>
       </div>
+      </div>
 
-      <!-- Skeleton loading -->
-      @if (loading()) {
+      <!-- Skeleton loading: only on initial load when no products yet -->
+      @if (loading() && filteredProducts().length === 0) {
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           @for (i of skeletons; track i) {
             <div class="card overflow-hidden animate-pulse">
@@ -88,35 +89,37 @@ import { ProductCardComponent } from './product-card/product-card.component';
         </div>
       }
 
-      <!-- Products grid -->
-      @if (!loading() && !error()) {
-        @if (filteredProducts().length > 0) {
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            @for (product of filteredProducts(); track product.id) {
-              <app-product-card
-                [product]="product"
-                (addToCart)="onAddToCart($event)"
-                (deleteProduct)="onDeleteProduct($event)" />
-            }
-          </div>
-        } @else {
-          <div class="text-center py-20 card">
-            <svg class="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4"
-                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                    d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
-            <p class="text-gray-500 dark:text-gray-400 font-medium">{{ 'CATALOG.NOT_FOUND' | translate }}</p>
-            <button (click)="resetFilters()"
-                    class="mt-4 text-primary-600 dark:text-primary-400 text-sm hover:underline">
-              {{ 'CATALOG.RESET_FILTERS' | translate }}
-            </button>
-          </div>
-        }
+      <!-- Products grid: stays visible during subsequent loads -->
+      @if (!error() && filteredProducts().length > 0) {
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+             [class.opacity-60]="loading()" [class.pointer-events-none]="loading()">
+          @for (product of filteredProducts(); track product.id) {
+            <app-product-card
+              [product]="product"
+              (addToCart)="onAddToCart($event)"
+              (deleteProduct)="onDeleteProduct($event)" />
+          }
+        </div>
+      }
+
+      <!-- Empty state: only when not loading -->
+      @if (!loading() && !error() && filteredProducts().length === 0) {
+        <div class="text-center py-20 card">
+          <svg class="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4"
+               fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                  d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <p class="text-gray-500 dark:text-gray-400 font-medium">{{ 'CATALOG.NOT_FOUND' | translate }}</p>
+          <button (click)="resetFilters()"
+                  class="mt-4 text-primary-600 dark:text-primary-400 text-sm hover:underline">
+            {{ 'CATALOG.RESET_FILTERS' | translate }}
+          </button>
+        </div>
       }
 
       <!-- Pagination -->
-      @if (!loading() && !error() && totalPages() > 1) {
+      @if (!error() && totalPages() > 1) {
         <div class="flex items-center justify-center gap-1 mt-10">
           <button (click)="goToPage(currentPage() - 1)"
                   [disabled]="currentPage() === 0"
@@ -243,7 +246,11 @@ export class CatalogComponent implements OnInit {
       this.totalElements.set(res.totalElements);
       this.filteredProducts.set(res.items);
     } catch {
-      this.error.set('CATALOG.LOAD_ERROR');
+      if (this.allProducts.length === 0) {
+        this.error.set('CATALOG.LOAD_ERROR');
+      } else {
+        this.showToast(this.translateService.instant('CATALOG.REFRESH_FAILED'));
+      }
     } finally {
       this.loading.set(false);
     }
@@ -270,8 +277,11 @@ export class CatalogComponent implements OnInit {
 
   resetFilters(): void {
     this.searchQuery = '';
-    this.selectedCategory.set('');
-    this.loadProducts(0);
+    if (this.selectedCategory()) {
+      this.router.navigate([], { queryParams: {}, relativeTo: this.route });
+    } else {
+      this.loadProducts(0);
+    }
   }
 
   onAddToCart(product: Product): void {
@@ -280,10 +290,17 @@ export class CatalogComponent implements OnInit {
   }
 
   async onDeleteProduct(productId: string): Promise<void> {
-    await firstValueFrom(this.productService.deleteProduct(productId));
+    const backup = this.allProducts;
     this.allProducts = this.allProducts.filter(p => p.id !== productId);
     this.filterProducts();
-    this.showToast(this.translateService.instant('CATALOG.PRODUCT_DELETED'));
+    try {
+      await firstValueFrom(this.productService.deleteProduct(productId));
+      this.showToast(this.translateService.instant('CATALOG.PRODUCT_DELETED'));
+    } catch {
+      this.allProducts = backup;
+      this.filterProducts();
+      this.showToast(this.translateService.instant('CATALOG.LOAD_ERROR'));
+    }
   }
 
   private showToast(msg: string): void {

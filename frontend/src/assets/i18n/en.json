@@ -84,7 +84,8 @@
     "RESET_FILTERS": "Reset filters",
     "ADDED_TO_CART": "added to cart",
     "PRODUCT_DELETED": "Product deleted",
-    "LOAD_ERROR": "Failed to load products. Check your connection and try again."
+    "LOAD_ERROR": "Failed to load products. Check your connection and try again.",
+    "REFRESH_FAILED": "Could not refresh the product list"
   },
   "PRODUCT": {
     "OUT_OF_STOCK": "Out of stock",

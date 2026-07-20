@@ -54,18 +54,35 @@ export class ProductService {
     return this.http.delete<void>(`${this.baseUrl}/api/products/${id}`);
   }
 
+  private readonly CACHE_KEY = 'products_page_cache';
+
   getProductsPaged(page: number, size = 10, search = '', category = ''): Observable<{ items: Product[]; totalPages: number; totalElements: number }> {
     const params: Record<string, string> = { page: String(page), size: String(size) };
     if (search.trim())   params['name']     = search.trim();
     if (category.trim()) params['category'] = category.trim();
+    const isDefaultView = page === 0 && !search.trim() && !category.trim();
     return this.http.get<any>(`${this.baseUrl}/api/products/page`, { params }).pipe(
       retry({ count: 2, delay: 1000 }),
-      map(res => ({
-        items: (res.content as any[]).map(p => this.normalize(p)),
-        totalPages: res.page?.totalPages ?? res.totalPages ?? 1,
-        totalElements: res.page?.totalElements ?? res.totalElements ?? 0
-      })),
-      catchError(err => throwError(() => err))
+      map(res => {
+        const result = {
+          items: (res.content as any[]).map(p => this.normalize(p)),
+          totalPages: res.page?.totalPages ?? res.totalPages ?? 1,
+          totalElements: res.page?.totalElements ?? res.totalElements ?? 0
+        };
+        if (isDefaultView) {
+          try { localStorage.setItem(this.CACHE_KEY, JSON.stringify(result)); } catch {}
+        }
+        return result;
+      }),
+      catchError(err => {
+        if (isDefaultView) {
+          try {
+            const cached = localStorage.getItem(this.CACHE_KEY);
+            if (cached) return of(JSON.parse(cached) as { items: Product[]; totalPages: number; totalElements: number });
+          } catch {}
+        }
+        return throwError(() => err);
+      })
     );
   }
 
