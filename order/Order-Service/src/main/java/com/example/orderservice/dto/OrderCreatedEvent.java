@@ -1,4 +1,4 @@
-package com.example.orderservice.Dto;
+package com.example.orderservice.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

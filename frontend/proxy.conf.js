@@ -13,5 +13,11 @@ module.exports = {
     target: 'http://localhost:8090',
     secure: false,
     changeOrigin: true
+  },
+  '/ws': {
+    target: 'http://localhost:8098',
+    secure: false,
+    changeOrigin: true,
+    ws: true
   }
 };

@@ -59,8 +59,13 @@ public class AuthService {
         userRepo.findByUsername(req.getUsername()).ifPresent(u -> {
             tokenRepository.deleteByUsername(u.getUsername());
             String token = UUID.randomUUID().toString();
-            tokenRepository .save(new PasswordResetToken(null, token, u.getUsername(), LocalDateTime.now().plusHours(24)));
-            email.sendPasswordResetEmail(u.getUsername(), conf.getFrontendUrl() + "/auth/reset-password?token=" + token);
+            tokenRepository.save(new PasswordResetToken(null, token, u.getUsername(), LocalDateTime.now().plusHours(24)));
+            try {
+                email.sendPasswordResetEmail(u.getUsername(), conf.getFrontendUrl() + "/auth/reset-password?token=" + token);
+                log.info("Password reset email sent to {}", u.getUsername());
+            } catch (Exception e) {
+                log.error("Failed to send password reset email to {}: {}", u.getUsername(), e.getMessage());
+            }
         });
         return ResponseEntity.ok("Email sent if exists");
     }

@@ -1,8 +1,8 @@
 package com.example.orderservice.controller;
 
-import com.example.orderservice.Dto.ConfirmOrderRequest;
-import com.example.orderservice.Dto.OrderRequest;
-import com.example.orderservice.Dto.OrderStatusUpdateRequest;
+import com.example.orderservice.dto.ConfirmOrderRequest;
+import com.example.orderservice.dto.OrderRequest;
+import com.example.orderservice.dto.OrderStatusUpdateRequest;
 import com.example.orderservice.model.Order;
 import com.example.orderservice.service.OrderService;
 import jakarta.validation.Valid;

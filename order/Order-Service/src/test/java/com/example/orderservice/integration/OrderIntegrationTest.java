@@ -1,7 +1,7 @@
 package com.example.orderservice.integration;
 
-import com.example.orderservice.Dto.OrderRequest;
-import com.example.orderservice.Repository.OrderRepository;
+import com.example.orderservice.dto.OrderRequest;
+import com.example.orderservice.repository.OrderRepository;
 import com.example.orderservice.model.Order;
 import com.example.orderservice.model.OrderStatus;
 import com.fasterxml.jackson.databind.ObjectMapper;

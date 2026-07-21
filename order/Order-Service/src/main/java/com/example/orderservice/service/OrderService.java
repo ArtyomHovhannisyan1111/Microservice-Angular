@@ -1,7 +1,7 @@
 package com.example.orderservice.service;
 
-import com.example.orderservice.Dto.*;
-import com.example.orderservice.Repository.OrderRepository;
+import com.example.orderservice.dto.*;
+import com.example.orderservice.repository.OrderRepository;
 import com.example.orderservice.client.NotificationFeignClient;
 import com.example.orderservice.client.ProductFeignClient;
 import com.example.orderservice.client.UserServiceClient;

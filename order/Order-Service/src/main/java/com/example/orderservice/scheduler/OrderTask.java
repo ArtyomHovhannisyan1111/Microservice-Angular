@@ -1,7 +1,7 @@
-package com.example.orderservice.SchedulerTask;
+package com.example.orderservice.scheduler;
 
-import com.example.orderservice.Dto.NotificationConfirmRequest;
-import com.example.orderservice.Repository.OrderRepository;
+import com.example.orderservice.dto.NotificationConfirmRequest;
+import com.example.orderservice.repository.OrderRepository;
 import com.example.orderservice.client.NotificationFeignClient;
 import com.example.orderservice.model.Order;
 import com.example.orderservice.model.OrderStatus;
@@ -33,15 +33,8 @@ public class OrderTask {
 
         for (Order order : pendingOrders) {
             try {
-                // 1. Сначала меняем статус и сохраняем в БД.
-                //    Если save упадёт — письмо не отправится, заказ останется PENDING
-                //    и будет повторно обработан на следующем запуске (без дублей email).
                 order.setStatus(OrderStatus.CONFIRMED);
                 orderRepository.save(order);
-
-                // 2. Только после успешного сохранения отправляем уведомление.
-                //    Если email упадёт — заказ уже CONFIRMED и больше не попадёт
-                //    в findByStatus(PENDING), дублей не будет.
                 notificationFeignClient.confirmOrder(
                         NotificationConfirmRequest.builder()
                                 .orderId(order.getId().longValue())

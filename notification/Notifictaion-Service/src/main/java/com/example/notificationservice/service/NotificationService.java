@@ -8,6 +8,7 @@ import com.example.notificationservice.repository.NotificationRepository;
 import com.example.notificationservice.util.NotificationUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -18,12 +19,14 @@ public class NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final EmailService emailService;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @KafkaListener(topics = "order-topic", groupId = "notification-group", containerFactory = "kafkaListenerContainerFactory")
     public void consumeOrderEvent(OrderEvent event) {
-        notificationRepository.save(NotificationMapper.toEntity(event,
+        Notification saved = notificationRepository.save(NotificationMapper.toEntity(event,
                 NotificationUtil.buildTitle(event.getOrderId()),
                 NotificationUtil.buildMessage(event.getTotalAmount())));
+        push(saved);
     }
 
     @KafkaListener(topics = "order-cancel-topic", groupId = "notification-group", containerFactory = "notificationListenerContainerFactory")
@@ -42,13 +45,14 @@ public class NotificationService {
                     req.getTotalPrice() != null ? req.getTotalPrice() : BigDecimal.ZERO,
                     req.getUserName() != null ? req.getUserName() : "Покупатель");
 
-        notificationRepository.save(Notification.builder()
+        Notification saved = notificationRepository.save(Notification.builder()
                 .userId(req.getUserId() != null ? req.getUserId() : 0L)
                 .title("Заказ отменён")
                 .message("Ваш заказ #" + req.getOrderId() + " на сумму " + req.getTotalPrice() + " ₽ отменён: недостаточно средств на балансе.")
                 .totalPrice(req.getTotalPrice() != null ? req.getTotalPrice() : BigDecimal.ZERO)
                 .isRead(false)
                 .build());
+        push(saved);
     }
 
     public void confirmOrder(ConfirmOrderRequest req) {
@@ -57,12 +61,18 @@ public class NotificationService {
                     req.getTotalPrice() != null ? req.getTotalPrice() : BigDecimal.ZERO,
                     req.getUserName() != null ? req.getUserName() : "Покупатель");
 
-        notificationRepository.save(Notification.builder()
+        Notification saved = notificationRepository.save(Notification.builder()
                 .userId(req.getUserId() != null ? req.getUserId() : 0L)
                 .title("Заказ подтверждён")
                 .message("Ваш заказ #" + req.getOrderId() + " на сумму " + req.getTotalPrice() + " ₽ подтверждён администратором.")
                 .totalPrice(req.getTotalPrice() != null ? req.getTotalPrice() : BigDecimal.ZERO)
                 .isRead(false)
                 .build());
+        push(saved);
+    }
+
+    private void push(Notification n) {
+        messagingTemplate.convertAndSend("/topic/user/" + n.getUserId(), n);
+        messagingTemplate.convertAndSend("/topic/admin", n);
     }
 }

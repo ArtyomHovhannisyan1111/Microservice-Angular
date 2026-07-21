@@ -1,6 +1,6 @@
 package com.example.orderservice.util;
 
-import com.example.orderservice.Dto.ProductResponse;
+import com.example.orderservice.dto.ProductResponse;
 import com.example.orderservice.exception.ResourceNotFoundException;
 import com.example.orderservice.model.Order;
 import com.example.orderservice.model.OrderStatus;

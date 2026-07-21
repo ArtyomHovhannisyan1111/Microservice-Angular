@@ -1,6 +1,6 @@
 package com.example.orderservice.controller;
 
-import com.example.orderservice.Dto.OrderRequest;
+import com.example.orderservice.dto.OrderRequest;
 import com.example.orderservice.exception.GlobalExceptionHandler;
 import com.example.orderservice.exception.ResourceNotFoundException;
 import com.example.orderservice.model.Order;

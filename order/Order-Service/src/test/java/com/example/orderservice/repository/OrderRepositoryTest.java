@@ -1,6 +1,5 @@
 package com.example.orderservice.repository;
 
-import com.example.orderservice.Repository.OrderRepository;
 import com.example.orderservice.model.Order;
 import com.example.orderservice.model.OrderStatus;
 import org.junit.jupiter.api.BeforeEach;

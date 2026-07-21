@@ -1,6 +1,6 @@
 package com.example.orderservice.service;
 
-import com.example.orderservice.Repository.RequestLogRepository;
+import com.example.orderservice.repository.RequestLogRepository;
 import com.example.orderservice.model.RequestLog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
