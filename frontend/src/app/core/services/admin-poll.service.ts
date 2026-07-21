@@ -50,15 +50,10 @@ export class AdminPollService {
     const proto  = location.protocol === 'https:' ? 'wss' : 'ws';
     const wsUrl  = `${proto}://${location.host}/ws`;
 
-    let reconnectDelay = 5000;
     this.stompClient = new Client({
       brokerURL: wsUrl,
       connectHeaders: { Authorization: `Bearer ${token}` },
-      reconnectDelay: () => {
-        const delay = reconnectDelay;
-        reconnectDelay = Math.min(reconnectDelay * 2, 60000);
-        return delay;
-      },
+      reconnectDelay: 30000,
       onConnect: () => {
         const topic = isAdmin ? '/topic/admin' : `/topic/user/${userId}`;
         this.stompClient!.subscribe(topic, (msg) => {
