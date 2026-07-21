@@ -44,7 +44,7 @@
     "EMAIL": "Email",
     "PASSWORD": "Password",
     "INVALID_EMAIL": "Enter a valid email",
-    "MIN_6_CHARS": "Minimum 6 characters",
+    "MIN_6_CHARS": "Minimum 8 characters",
     "FORGOT_PASSWORD": "Forgot password?",
     "LOGGING_IN": "Logging in...",
     "LOGIN_BTN": "Log in",

@@ -22,7 +22,13 @@ function initTranslate(translate: TranslateService) {
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    provideRouter(routes, withViewTransitions()),
+    provideRouter(routes, withViewTransitions({
+      skipInitialTransition: true,
+      onViewTransitionCreated: ({ transition }) => {
+        transition.ready.catch(() => {});
+        transition.finished.catch(() => {});
+      }
+    })),
     provideAnimations(),
     provideHttpClient(withInterceptors([authInterceptor])),
     importProvidersFrom(

@@ -44,7 +44,7 @@
     "EMAIL": "Email",
     "PASSWORD": "Пароль",
     "INVALID_EMAIL": "Введите корректный email",
-    "MIN_6_CHARS": "Минимум 6 символов",
+    "MIN_6_CHARS": "Минимум 8 символов",
     "FORGOT_PASSWORD": "Забыли пароль?",
     "LOGGING_IN": "Входим...",
     "LOGIN_BTN": "Войти",
