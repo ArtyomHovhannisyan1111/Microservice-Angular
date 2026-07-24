@@ -11,6 +11,7 @@ import com.example.productservice.mapper.ProductMapper;
 import com.example.productservice.repository.ProductRepository;
 import com.example.productservice.util.ProductValidationUtils;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -19,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProductService {
@@ -120,7 +122,7 @@ public class ProductService {
         try {
             kafkaTemplate.send(KafkaTopicConfig.PRODUCT_EVENTS_TOPIC, product.getId(), product);
         } catch (Exception e) {
-            // Kafka unavailable — event skipped, product operation succeeds
+            log.warn("Failed to publish product event for id={}: {}", product.getId(), e.getMessage());
         }
     }
 

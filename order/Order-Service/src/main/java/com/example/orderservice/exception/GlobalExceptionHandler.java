@@ -28,7 +28,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(FeignException.class)
     @ResponseStatus(HttpStatus.BAD_GATEWAY)
     public Map<String, String> handleFeignException(FeignException ex) {
-        return buildErrorResponse("Ошибка связи с внутренним сервисом. Попробуйте позже.");
+        return buildErrorResponse("Internal service communication error. Please try again later.");
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

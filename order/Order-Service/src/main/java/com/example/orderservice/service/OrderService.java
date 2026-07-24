@@ -1,13 +1,19 @@
 package com.example.orderservice.service;
 
-import com.example.orderservice.dto.*;
-import com.example.orderservice.repository.OrderRepository;
 import com.example.orderservice.client.NotificationFeignClient;
 import com.example.orderservice.client.ProductFeignClient;
 import com.example.orderservice.client.UserServiceClient;
+import com.example.orderservice.dto.NotificationConfirmRequest;
+import com.example.orderservice.dto.OrderCreatedEvent;
+import com.example.orderservice.dto.OrderPlacedEvent;
+import com.example.orderservice.dto.OrderRequest;
+import com.example.orderservice.dto.ProductResponse;
+import com.example.orderservice.dto.StockUpdateRequest;
 import com.example.orderservice.exception.ResourceNotFoundException;
 import com.example.orderservice.mapper.OrderMapper;
-import com.example.orderservice.model.*;
+import com.example.orderservice.model.Order;
+import com.example.orderservice.model.OrderStatus;
+import com.example.orderservice.repository.OrderRepository;
 import com.example.orderservice.util.OrderValidationUtil;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
@@ -40,7 +46,7 @@ public class OrderService {
 
     @Transactional(rollbackFor = Exception.class)
     public Order createOrder(OrderRequest request) {
-        OrderValidationUtil.checkDuplicate(request.getRequestId(), requestLogService);
+        requestLogService.ensureUnique(request.getRequestId());
 
         ProductResponse product = productFeignClient.getProduct(request.getProductId());
         OrderValidationUtil.validateProduct(product);
@@ -70,7 +76,6 @@ public class OrderService {
         entity.setTotalPrice(total);
         Order order = orderRepository.save(entity);
 
-        requestLogService.logRequest(request.getRequestId());
         publishOrderEvents(order, product);
         return order;
     }
@@ -79,13 +84,9 @@ public class OrderService {
         Order order = findOrder(id);
         OrderValidationUtil.validateCancelable(order);
 
-        // 1. Сначала сохраняем CANCELLED — предотвращает повторную отмену
-        //    и двойной возврат баланса/стока при следующем вызове.
+
         order.setStatus(OrderStatus.CANCELLED);
         Order saved = orderRepository.save(order);
-
-        // 2. Возвращаем баланс и сток. Заказ уже CANCELLED, поэтому
-        //    повторный вызов cancelOrder упадёт на validateCancelable.
         try {
             userServiceClient.topUpBalance(saved.getUserId(), Map.of("amount", saved.getTotalPrice()));
         } catch (Exception e) {
@@ -97,7 +98,6 @@ public class OrderService {
             log.error("Failed to return stock for order {}: {}", saved.getId(), e.getMessage(), e);
         }
 
-        // 3. Отправляем уведомление об отмене.
         try {
             notificationFeignClient.cancelOrder(
                     NotificationConfirmRequest.builder()

@@ -371,8 +371,6 @@ export class NavbarComponent implements OnInit {
     });
     if (this.auth.isAuthenticated()) {
       this.auth.loadUserBalance();
-      const uid = this.auth.user()?.walletUserId ?? this.auth.user()?.userId ?? Number(this.auth.user()?.id);
-      if (uid) this.notifService.loadForUser(uid);
     }
   }
 

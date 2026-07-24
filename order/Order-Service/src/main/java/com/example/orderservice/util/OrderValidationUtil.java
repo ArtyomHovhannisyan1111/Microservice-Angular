@@ -4,17 +4,10 @@ import com.example.orderservice.dto.ProductResponse;
 import com.example.orderservice.exception.ResourceNotFoundException;
 import com.example.orderservice.model.Order;
 import com.example.orderservice.model.OrderStatus;
-import com.example.orderservice.service.RequestLogService;
 import lombok.experimental.UtilityClass;
 
 @UtilityClass
 public class OrderValidationUtil {
-
-    public static void checkDuplicate(String requestId, RequestLogService requestLogService) {
-        if (requestLogService.isDuplicate(requestId)) {
-            throw new IllegalStateException("Duplicate request: " + requestId);
-        }
-    }
 
     public static void validateProduct(ProductResponse product) {
         if (product == null) {

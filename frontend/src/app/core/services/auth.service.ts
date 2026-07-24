@@ -68,8 +68,14 @@ export class AuthService {
     }
     const role = this.extractRole(token);
     const userId = this.extractUserId(token);
-    this.persist({ id: String(userId), userId, email: req.email, name: req.email.split('@')[0], token, role });
-    await this.syncUserProfile(req.email);
+    const existing = this._user();
+    const walletUserId = existing?.email === req.email ? existing?.walletUserId : undefined;
+    this.persist({ id: String(userId), userId, email: req.email, name: req.email.split('@')[0], token, role, walletUserId });
+    if (!walletUserId) {
+      await this.syncUserProfile(req.email);
+    } else {
+      await this.loadUserBalance();
+    }
   }
 
   async register(req: RegisterRequest): Promise<void> {
