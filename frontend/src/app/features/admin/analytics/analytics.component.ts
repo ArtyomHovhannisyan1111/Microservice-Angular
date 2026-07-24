@@ -399,11 +399,12 @@ const STATUS_COLORS: Record<string, string> = {
                     </span>
                   </td>
                   <td class="px-5 py-3.5 text-right">
-                    <button class="px-3 py-1.5 text-xs font-medium text-indigo-600
-                                   bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors
-                                   opacity-0 group-hover:opacity-100">
+                    <a [routerLink]="['/admin/orders']" [queryParams]="{ id: order.id }"
+                       class="inline-block px-3 py-1.5 text-xs font-medium text-indigo-600
+                              bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors
+                              opacity-0 group-hover:opacity-100">
                       {{ 'ANALYTICS.DETAILS' | translate }}
-                    </button>
+                    </a>
                   </td>
                 </tr>
               }
