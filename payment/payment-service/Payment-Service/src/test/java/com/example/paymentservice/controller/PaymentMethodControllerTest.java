@@ -52,11 +52,21 @@ class PaymentMethodControllerTest {
             given(service.save(any())).willReturn(sampleResponse());
 
             mockMvc.perform(post("/api/payment-methods")
+                            .header("X-User-Id", "1")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(mapper.writeValueAsString(validRequest())))
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.id").value(10))
                     .andExpect(jsonPath("$.maskedNumber").value("**** 1111"));
+        }
+
+        @Test @DisplayName("чужой userId → 403 Forbidden")
+        void givenMismatchedUserId_whenCreate_thenReturns403() throws Exception {
+            mockMvc.perform(post("/api/payment-methods")
+                            .header("X-User-Id", "99")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(mapper.writeValueAsString(validRequest())))
+                    .andExpect(status().isForbidden());
         }
 
         @Test @DisplayName("null userId → 400 Bad Request")
@@ -65,6 +75,7 @@ class PaymentMethodControllerTest {
             bad.setUserId(null);
 
             mockMvc.perform(post("/api/payment-methods")
+                            .header("X-User-Id", "1")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(mapper.writeValueAsString(bad)))
                     .andExpect(status().isBadRequest());
@@ -76,6 +87,7 @@ class PaymentMethodControllerTest {
             bad.setProviderName(null);
 
             mockMvc.perform(post("/api/payment-methods")
+                            .header("X-User-Id", "1")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(mapper.writeValueAsString(bad)))
                     .andExpect(status().isBadRequest());
@@ -89,17 +101,26 @@ class PaymentMethodControllerTest {
         void givenUserId_thenReturns200WithList() throws Exception {
             given(service.getMethodsByUserId(1L)).willReturn(List.of(sampleResponse()));
 
-            mockMvc.perform(get("/api/payment-methods/user/1"))
+            mockMvc.perform(get("/api/payment-methods/user/1")
+                            .header("X-User-Id", "1"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.length()").value(1))
                     .andExpect(jsonPath("$[0].type").value("CARD"));
+        }
+
+        @Test @DisplayName("чужой userId → 403 Forbidden")
+        void givenMismatchedUserId_thenReturns403() throws Exception {
+            mockMvc.perform(get("/api/payment-methods/user/1")
+                            .header("X-User-Id", "99"))
+                    .andExpect(status().isForbidden());
         }
 
         @Test @DisplayName("userId без карт → 200 с пустым списком")
         void givenUserWithNoCards_thenReturnsEmptyList() throws Exception {
             given(service.getMethodsByUserId(99L)).willReturn(List.of());
 
-            mockMvc.perform(get("/api/payment-methods/user/99"))
+            mockMvc.perform(get("/api/payment-methods/user/99")
+                            .header("X-User-Id", "99"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.length()").value(0));
         }

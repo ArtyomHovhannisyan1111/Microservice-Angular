@@ -1,6 +1,5 @@
 package com.example.paymentservice.controller;
 
-import com.example.paymentservice.Util.JwtUtil;
 import com.example.paymentservice.dto.TopUpRequest;
 import com.example.paymentservice.dto.TopUpResponse;
 import com.example.paymentservice.service.BalanceService;
@@ -31,12 +30,11 @@ class BalanceControllerTest {
     @Autowired MockMvc     mockMvc;
     @Autowired ObjectMapper mapper;
     @MockBean  BalanceService balanceService;
-    @MockBean  JwtUtil        jwtUtil;
 
     @Nested @DisplayName("POST /api/v1/balance/deposit")
     class Deposit {
 
-        @Test @DisplayName("валидный токен и запрос → 200 с TopUpResponse")
+        @Test @DisplayName("валидный запрос → 200 с TopUpResponse")
         void givenValidRequest_whenDeposit_thenReturns200() throws Exception {
             TopUpRequest req = new TopUpRequest();
             req.setPaymentMethodId(10L);
@@ -48,11 +46,10 @@ class BalanceControllerTest {
             resp.setAmount(new BigDecimal("500"));
             resp.setBrand("Visa");
 
-            given(jwtUtil.extractUserId("Bearer token123")).willReturn(42L);
             given(balanceService.depositToCard(anyLong(), any())).willReturn(resp);
 
             mockMvc.perform(post("/api/v1/balance/deposit")
-                            .header("Authorization", "Bearer token123")
+                            .header("X-User-Id", "42")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(mapper.writeValueAsString(req)))
                     .andExpect(status().isOk())
@@ -65,10 +62,8 @@ class BalanceControllerTest {
             TopUpRequest bad = new TopUpRequest();
             bad.setPaymentMethodId(10L);
 
-            given(jwtUtil.extractUserId(any())).willReturn(42L);
-
             mockMvc.perform(post("/api/v1/balance/deposit")
-                            .header("Authorization", "Bearer token")
+                            .header("X-User-Id", "42")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(mapper.writeValueAsString(bad)))
                     .andExpect(status().isBadRequest());
