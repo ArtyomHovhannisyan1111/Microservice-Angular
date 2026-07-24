@@ -17,6 +17,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.kafka.core.KafkaTemplate;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -30,11 +31,12 @@ import static org.mockito.BDDMockito.*;
 @DisplayName("OrderService")
 class OrderServiceTest {
 
-    @Mock OrderRepository          orderRepository;
-    @Mock ProductFeignClient       productFeignClient;
-    @Mock NotificationFeignClient  notificationFeignClient;
-    @Mock UserServiceClient        userServiceClient;
-    @Mock RequestLogService        requestLogService;
+    @Mock OrderRepository                 orderRepository;
+    @Mock ProductFeignClient              productFeignClient;
+    @Mock NotificationFeignClient         notificationFeignClient;
+    @Mock UserServiceClient               userServiceClient;
+    @Mock RequestLogService               requestLogService;
+    @Mock KafkaTemplate<String, Object>   kafkaTemplate;
 
     @InjectMocks OrderService orderService;
 
@@ -65,7 +67,7 @@ class OrderServiceTest {
         @Test
         @DisplayName("позитивный сценарий: заказ сохраняется со статусом PENDING")
         void givenValidRequest_whenCreateOrder_thenOrderSavedAsPending() {
-            given(requestLogService.isDuplicate(request.getRequestId())).willReturn(false);
+            // ensureUnique() — void, по умолчанию ничего не делает (не бросает)
             given(productFeignClient.getProduct(5)).willReturn(product);
             given(orderRepository.save(any(Order.class))).willAnswer(inv -> {
                 Order o = inv.getArgument(0);
@@ -81,13 +83,14 @@ class OrderServiceTest {
 
             then(orderRepository).should().save(any(Order.class));
             then(productFeignClient).should().decreaseStock(eq(5), any());
-            then(requestLogService).should().logRequest(request.getRequestId());
+            then(requestLogService).should().ensureUnique(request.getRequestId());
         }
 
         @Test
         @DisplayName("дублирующийся requestId → IllegalStateException, в БД ничего не сохраняется")
         void givenDuplicateRequestId_whenCreateOrder_thenThrowsIllegalState() {
-            given(requestLogService.isDuplicate(request.getRequestId())).willReturn(true);
+            willThrow(new IllegalStateException("Duplicate request: " + request.getRequestId()))
+                    .given(requestLogService).ensureUnique(request.getRequestId());
 
             assertThatThrownBy(() -> orderService.createOrder(request))
                     .isInstanceOf(IllegalStateException.class)
@@ -100,7 +103,7 @@ class OrderServiceTest {
         @Test
         @DisplayName("товар не существует → ResourceNotFoundException от productFeignClient")
         void givenMissingProduct_whenCreateOrder_thenPropagatesFeignException() {
-            given(requestLogService.isDuplicate(any())).willReturn(false);
+            // ensureUnique() — void, по умолчанию проходит без исключения
             given(productFeignClient.getProduct(5))
                     .willThrow(new ResourceNotFoundException("Product not found: 5"));
 
